@@ -62,7 +62,7 @@ public class ComplexToSimpleFeatureCollection implements SimpleFeatureCollection
             Map<String, String> rulesMap,
             FeatureCollection<FeatureType, Feature> featureCollection,
             NamespaceSupport namespaceSupport) {
-        this.rulesMap = new HashMap(requireNonNull(rulesMap));
+        this.rulesMap = new HashMap<>(requireNonNull(rulesMap));
         this.delegate = requireNonNull(featureCollection);
         this.namespaceSupport = requireNonNull(namespaceSupport);
         this.featureType = requireNonNull(buildConvertedType());
@@ -163,10 +163,12 @@ public class ComplexToSimpleFeatureCollection implements SimpleFeatureCollection
             this.delegate = delegate;
         }
 
+        @Override
         public boolean hasNext() {
             return delegate.hasNext();
         }
 
+        @Override
         public SimpleFeature next() throws NoSuchElementException {
             SimpleFeature simpleFeature = convert(delegate.next());
             LOGGER.log(Level.FINE, "Converted simple feature: {0}", simpleFeature);
@@ -212,6 +214,7 @@ public class ComplexToSimpleFeatureCollection implements SimpleFeatureCollection
             return null;
         }
 
+        @Override
         public void close() {
             delegate.close();
         }

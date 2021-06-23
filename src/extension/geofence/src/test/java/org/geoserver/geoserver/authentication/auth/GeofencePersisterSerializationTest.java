@@ -4,6 +4,7 @@
  */
 package org.geoserver.geoserver.authentication.auth;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -11,7 +12,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
-import java.util.List;
 import org.geoserver.config.util.XStreamPersister;
 import org.geoserver.config.util.XStreamPersisterFactory;
 import org.geoserver.geofence.core.model.Rule;
@@ -54,7 +54,7 @@ public class GeofencePersisterSerializationTest {
                         + "<workspace>geonode</workspace>"
                         + "</Rule>";
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(xml.getBytes("UTF-8"));
+        ByteArrayInputStream bais = new ByteArrayInputStream(xml.getBytes(UTF_8));
 
         JaxbRule rule = persister.load(bais, JaxbRule.class);
 
@@ -99,7 +99,7 @@ public class GeofencePersisterSerializationTest {
         persister.save(rule, baos);
         baos.flush();
 
-        String xml = new String(baos.toByteArray(), "UTF-8");
+        String xml = new String(baos.toByteArray(), UTF_8);
 
         // System.err.println(xml);
         assertTrue(xml.contains("pippo"));
@@ -117,13 +117,13 @@ public class GeofencePersisterSerializationTest {
         rule2.setLayer("layer");
         rule2.setAccess(GrantType.ALLOW);
 
-        Rule[] rules = new Rule[] {rule2};
-        JaxbRuleList ruleList = new JaxbRuleList((List<Rule>) Arrays.asList(rules));
+        Rule[] rules = {rule2};
+        JaxbRuleList ruleList = new JaxbRuleList(Arrays.asList(rules));
 
         persister.save(ruleList, baos);
         baos.flush();
 
-        xml = new String(baos.toByteArray(), "UTF-8");
+        xml = new String(baos.toByteArray(), UTF_8);
 
         // System.err.println(xml);
         assertTrue(xml.contains("topolino"));

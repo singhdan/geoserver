@@ -5,7 +5,8 @@
  */
 package org.geoserver.importer.rest;
 
-import com.google.common.base.Function;
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.collect.Collections2;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -16,7 +17,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
-import org.geoserver.importer.DatePattern;
 import org.geoserver.importer.Dates;
 import org.geoserver.importer.transform.DateFormatTransform;
 import org.junit.Test;
@@ -59,17 +59,10 @@ public class DateFormatTransformTest extends TransformTestSupport {
 
         // make a big shuffled list of patterns to ensure caching of last pattern
         // doesn't cause any problems
-        List<String> patterns = new ArrayList<String>();
+        List<String> patterns = new ArrayList<>();
         patterns.addAll(
                 Collections2.transform(
-                        Dates.patterns(false),
-                        new Function<DatePattern, String>() {
-
-                            @Override
-                            public String apply(DatePattern input) {
-                                return input.dateFormat().toPattern();
-                            }
-                        }));
+                        Dates.patterns(false), input -> input.dateFormat().toPattern()));
 
         Collections.shuffle(patterns);
 

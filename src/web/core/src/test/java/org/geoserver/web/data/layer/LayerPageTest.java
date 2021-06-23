@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.xml.namespace.QName;
-import org.apache.wicket.markup.html.form.CheckBox;
 import org.apache.wicket.request.mapper.parameter.INamedParameters.Type;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.util.tester.FormTester;
@@ -46,7 +45,7 @@ public class LayerPageTest extends GeoServerWicketTestSupport {
 
         testData.addVectorLayer(BUILDINGS, getCatalog());
 
-        Map<LayerProperty, Object> props = new HashMap();
+        Map<LayerProperty, Object> props = new HashMap<>();
         props.put(LayerProperty.STYLE, BUILDINGS.getLocalPart());
         testData.addVectorLayer(GS_BUILDINGS, props, getCatalog());
     }
@@ -82,11 +81,8 @@ public class LayerPageTest extends GeoServerWicketTestSupport {
         assertEquals("cite", workspaces.get(1));
 
         // select second layer
-        String checkBoxPath = "table:listContainer:items:6:selectItemContainer:selectItem";
-        CheckBox selector = (CheckBox) tester.getComponentFromLastRenderedPage(checkBoxPath);
-        // dirty trick, how to set a form component value without a form
-        tester.getRequest().setParameter(selector.getInputName(), "true");
-        tester.executeAjaxEvent(selector, "click");
+
+        table.selectIndex(1);
         assertEquals(1, table.getSelection().size());
         LayerInfo li = (LayerInfo) table.getSelection().get(0);
         assertEquals("cite", li.getResource().getStore().getWorkspace().getName());
@@ -195,7 +191,7 @@ public class LayerPageTest extends GeoServerWicketTestSupport {
 
     private List<String> getWorkspaces(GeoServerTablePanel table) {
         Iterator it = table.getDataProvider().iterator(0, 2);
-        List<String> workspaces = new ArrayList<String>();
+        List<String> workspaces = new ArrayList<>();
         while (it.hasNext()) {
             LayerInfo li = (LayerInfo) it.next();
             String wsName = li.getResource().getStore().getWorkspace().getName();

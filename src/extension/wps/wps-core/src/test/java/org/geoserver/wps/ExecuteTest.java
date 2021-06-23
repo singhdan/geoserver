@@ -45,7 +45,6 @@ import org.geoserver.config.GeoServerInfo;
 import org.geoserver.config.SettingsInfo;
 import org.geoserver.data.test.MockData;
 import org.geoserver.data.test.SystemTestData;
-import org.geoserver.data.test.SystemTestData.LayerProperty;
 import org.geoserver.ows.util.KvpUtils;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.ServiceException;
@@ -77,6 +76,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKTReader;
+import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -93,7 +93,7 @@ public class ExecuteTest extends WPSTestSupport {
         String pgf = PRIMITIVEGEOFEATURE.getLocalPart();
         testData.addVectorLayer(
                 new QName("http://foo.org", pgf, "foo"),
-                new HashMap<LayerProperty, Object>(),
+                new HashMap<>(),
                 pgf + ".properties",
                 MockData.class,
                 getCatalog());
@@ -1473,7 +1473,7 @@ public class ExecuteTest extends WPSTestSupport {
                     }
 
                     @Override
-                    protected Iterator openIterator() {
+                    protected Iterator<SimpleFeature> openIterator() {
                         while (returnFlag.get() == false) {
                             try {
                                 Thread.sleep(20);
@@ -2082,7 +2082,7 @@ public class ExecuteTest extends WPSTestSupport {
                     }
 
                     @Override
-                    protected Iterator openIterator() {
+                    protected Iterator<SimpleFeature> openIterator() {
                         throw new RuntimeException("Toasted!");
                     }
                 };
@@ -2134,8 +2134,8 @@ public class ExecuteTest extends WPSTestSupport {
         ZipInputStream zis = new ZipInputStream(in);
         ZipEntry entry = null;
 
-        final String[] extensions = new String[] {".shp", ".shx", ".dbf", ".prj", ".cst"};
-        Set names = new HashSet();
+        final String[] extensions = {".shp", ".shx", ".dbf", ".prj", ".cst"};
+        Set<String> names = new HashSet<>();
         for (String name : typeNames) {
             for (String extension : extensions) {
                 names.add(name + extension);

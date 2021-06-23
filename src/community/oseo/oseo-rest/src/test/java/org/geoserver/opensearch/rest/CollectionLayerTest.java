@@ -16,6 +16,7 @@ import com.jayway.jsonpath.DocumentContext;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +57,11 @@ import org.w3c.dom.Document;
 public class CollectionLayerTest extends OSEORestTestSupport {
 
     private String resourceBase;
+
+    @Override
+    protected String getLogConfiguration() {
+        return "/DEFAULT_LOGGING.properties";
+    }
 
     @Override
     protected void setUpTestData(SystemTestData testData) throws Exception {
@@ -131,7 +137,7 @@ public class CollectionLayerTest extends OSEORestTestSupport {
     }
 
     protected String getTestStringData(String location) throws IOException {
-        return IOUtils.toString(getClass().getResourceAsStream(location), "UTF-8");
+        return IOUtils.toString(getClass().getResourceAsStream(location), StandardCharsets.UTF_8);
     }
 
     @Test
@@ -194,9 +200,7 @@ public class CollectionLayerTest extends OSEORestTestSupport {
         // ... its style is a gray one based on the RED band
         assertThat(layer.getDefaultStyle().prefixedName(), equalTo("gs:test123"));
         ChannelSelection cs = getChannelSelection(layer);
-        assertNull(cs.getRGBChannels()[0]);
-        assertNull(cs.getRGBChannels()[1]);
-        assertNull(cs.getRGBChannels()[2]);
+        assertNull(cs.getRGBChannels());
         assertEquals("1", cs.getGrayChannel().getChannelName().evaluate(null, String.class));
 
         BufferedImage image =
@@ -373,9 +377,7 @@ public class CollectionLayerTest extends OSEORestTestSupport {
         assertThat(layer.getDefaultStyle().prefixedName(), equalTo("gs:test123"));
         // ... and it uses only a gray band, the snow flag
         ChannelSelection cs = getChannelSelection(layer);
-        assertNull(cs.getRGBChannels()[0]);
-        assertNull(cs.getRGBChannels()[1]);
-        assertNull(cs.getRGBChannels()[2]);
+        assertNull(cs.getRGBChannels());
         assertEquals("7", cs.getGrayChannel().getChannelName().evaluate(null, String.class));
 
         // the image is almost black, but not fully

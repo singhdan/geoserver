@@ -26,6 +26,7 @@ import java.awt.geom.PathIterator;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -183,7 +184,7 @@ public class PDFMapResponse extends AbstractMapResponse {
 
             // we already do everything that the optimized data loading does...
             // if we set it to true then it does it all twice...
-            java.util.Map rendererParams = new HashMap();
+            Map<String, Object> rendererParams = new HashMap<>();
             rendererParams.put("optimizedDataLoadingEnabled", Boolean.TRUE);
             rendererParams.put("renderingBuffer", Integer.valueOf(mapContent.getBuffer()));
             // we need the renderer to draw everything on the batik provided graphics object
@@ -206,8 +207,8 @@ public class PDFMapResponse extends AbstractMapResponse {
             // Add a render listener that ignores well known rendering exceptions and reports back
             // non
             // ignorable ones
-            final RenderExceptionStrategy nonIgnorableExceptionListener;
-            nonIgnorableExceptionListener = new RenderExceptionStrategy(renderer);
+            final RenderExceptionStrategy nonIgnorableExceptionListener =
+                    new RenderExceptionStrategy(renderer);
             renderer.addRenderListener(nonIgnorableExceptionListener);
 
             // enforce max memory usage

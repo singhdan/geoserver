@@ -105,6 +105,7 @@ public class DefaultControlFlowConfigurator
         this.configFile = watcher;
     }
 
+    @Override
     public List<FlowController> buildFlowControllers() throws Exception {
         timeout = -1;
 
@@ -265,10 +266,12 @@ public class DefaultControlFlowConfigurator
         }
     }
 
+    @Override
     public boolean isStale() {
         return configFile.isStale();
     }
 
+    @Override
     public long getTimeout() {
         return timeout;
     }
@@ -307,12 +310,9 @@ public class DefaultControlFlowConfigurator
         } else if (this.configFile != null && this.configFile.getProperties() != null) {
             File controlFlowConfigurationFile =
                     Resources.file(resourceLoader.get(PROPERTYFILENAME), true);
-            OutputStream out = Files.out(controlFlowConfigurationFile);
-            try {
+            try (OutputStream out = Files.out(controlFlowConfigurationFile)) {
                 this.configFile.getProperties().store(out, "");
-            } finally {
                 out.flush();
-                out.close();
             }
         }
     }

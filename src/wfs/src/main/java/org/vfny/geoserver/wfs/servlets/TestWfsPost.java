@@ -6,7 +6,6 @@
 package org.vfny.geoserver.wfs.servlets;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,11 +46,13 @@ public class TestWfsPost extends HttpServlet {
     static final Logger LOGGER = Logging.getLogger(TestWfsPost.class);
 
     /** Initializes the servlet. */
+    @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
     }
 
     /** Destroys the servlet. */
+    @Override
     public void destroy() {}
 
     /**
@@ -60,6 +61,7 @@ public class TestWfsPost extends HttpServlet {
      * @param request servlet request
      * @param response servlet response
      */
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         processRequest(request, response);
@@ -71,12 +73,14 @@ public class TestWfsPost extends HttpServlet {
      * @param request servlet request
      * @param response servlet response
      */
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         processRequest(request, response);
     }
 
     /** Returns a short description of the servlet. */
+    @Override
     public String getServletInfo() {
         return "Tests a WFS post request using a form entry.";
     }
@@ -165,9 +169,8 @@ public class TestWfsPost extends HttpServlet {
         } else {
             response.setContentType("application/xml");
 
-            BufferedReader xmlIn = null;
             PrintWriter xmlOut = null;
-            try {
+            try { // NOPMD - worried try-with-resource could close the connection
                 URL u = new URL(urlString);
                 validateURL(request, urlString, getProxyBaseURL());
                 java.net.HttpURLConnection acon = (java.net.HttpURLConnection) u.openConnection();
@@ -255,17 +258,6 @@ public class TestWfsPost extends HttpServlet {
                 PrintWriter out = response.getWriter();
                 out.print(errorResponse(e));
             } finally {
-                try {
-                    if (xmlIn != null) {
-                        xmlIn.close();
-                    }
-                } catch (Exception e1) {
-                    LOGGER.log(Level.FINE, "Internal failure dealing with the request", e1);
-                    @SuppressWarnings("PMD.CloseResource") // managed by the servlet
-                    PrintWriter out = response.getWriter();
-                    out.print(errorResponse(e1));
-                }
-
                 try {
                     if (xmlOut != null) {
                         xmlOut.close();

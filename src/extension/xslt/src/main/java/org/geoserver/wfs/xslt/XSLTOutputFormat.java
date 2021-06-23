@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,7 +44,6 @@ import org.geoserver.wfs.response.ComplexFeatureAwareFormat;
 import org.geoserver.wfs.xslt.config.TransformInfo;
 import org.geoserver.wfs.xslt.config.TransformRepository;
 import org.geotools.feature.FeatureCollection;
-import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
@@ -60,7 +58,7 @@ import org.springframework.context.ApplicationContextAware;
 public class XSLTOutputFormat extends WFSGetFeatureOutputFormat
         implements ApplicationContextAware, DisposableBean, ComplexFeatureAwareFormat {
 
-    static Map<String, String> formats = new ConcurrentHashMap<String, String>();
+    static Map<String, String> formats = new ConcurrentHashMap<>();
 
     ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -104,7 +102,7 @@ public class XSLTOutputFormat extends WFSGetFeatureOutputFormat
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         // find all the responses we could use as a source
         List<Response> all = GeoServerExtensions.extensions(Response.class, applicationContext);
-        responses = new ArrayList<Response>();
+        responses = new ArrayList<>();
         for (Response response : all) {
             if (response.getBinding().equals(FeatureCollectionResponse.class) && response != this) {
                 responses.add(response);
@@ -134,33 +132,48 @@ public class XSLTOutputFormat extends WFSGetFeatureOutputFormat
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String getAttachmentFileName(Object value, Operation operation) {
         try {
+            GetFeatureRequest request = GetFeatureRequest.adapt(operation.getParameters()[0]);
+
             FeatureCollectionResponse featureCollections = (FeatureCollectionResponse) value;
             TransformInfo info = locateTransformation(featureCollections, operation);
 
             // concatenate all feature types requested
+
             StringBuilder sb = new StringBuilder();
-            for (FeatureCollection<FeatureType, Feature> fc : featureCollections.getFeatures()) {
-                sb.append(fc.getSchema().getName().getLocalPart());
-                sb.append("_");
+            if (request.getFormatOptions() != null
+                    && request.getFormatOptions().containsKey("FILENAME")) {
+                sb.append((String) request.getFormatOptions().get("FILENAME"));
+            } else {
+                for (FeatureCollection fc : featureCollections.getFeatures()) {
+                    sb.append(fc.getSchema().getName().getLocalPart());
+                    sb.append("_");
+                }
+                sb.setLength(sb.length() - 1);
             }
-            sb.setLength(sb.length() - 1);
 
-            String extension = info.getFileExtension();
-            if (extension == null) {
-                extension = ".txt";
-                sb.append(extension);
+            if (sb.indexOf(".") == -1) {
+                String extension = info.getFileExtension();
+                if (extension == null) {
+                    sb.append(".txt");
+                } else {
+                    if (!extension.startsWith(".")) {
+                        sb.append(".");
+                    }
+                    sb.append(extension);
+                }
             }
-            if (!extension.startsWith(".")) {
-                sb.append(".");
-            }
-            sb.append(extension);
-
             return sb.toString();
         } catch (IOException e) {
             throw new WFSException("Failed to locate the XSLT transformation", e);
         }
+    }
+
+    @Override
+    protected String getExtension(FeatureCollectionResponse response) {
+        return null; // handled by getAttachmentFileName above
     }
 
     @Override
@@ -198,50 +211,38 @@ public class XSLTOutputFormat extends WFSGetFeatureOutputFormat
         }
 
         // prepare the stream connections, so that we can do the transformation on the fly
-        PipedInputStream pis = new PipedInputStream();
-        @SuppressWarnings("PMD.CloseResource") // these operates in memory
-        final PipedOutputStream pos = new PipedOutputStream(pis);
+        try (PipedInputStream pis = new PipedInputStream();
+                PipedOutputStream pos = new PipedOutputStream(pis)) {
 
-        // submit the source output format execution, tracking exceptions
-        Future<Void> future =
-                executor.submit(
-                        new Callable<Void>() {
-
-                            @Override
-                            public Void call() throws Exception {
-                                try {
-                                    sourceResponse.write(featureCollection, pos, sourceOperation);
-                                } finally {
-                                    // close the stream to make sure the transformation won't keep
-                                    // on waiting
-                                    pos.close();
-                                }
-
+            // submit the source output format execution, tracking exceptions
+            Future<Void> future =
+                    executor.submit(
+                            () -> {
+                                sourceResponse.write(featureCollection, pos, sourceOperation);
+                                pos.close(); // or the piped input stream will never finish
                                 return null;
-                            }
-                        });
+                            });
 
-        // run the transformation
-        TransformerException transformerException = null;
-        try {
-            transformer.transform(new StreamSource(pis), new StreamResult(output));
-        } catch (TransformerException e) {
-            transformerException = e;
-        } finally {
-            pis.close();
-        }
+            // run the transformation
+            TransformerException transformerException = null;
+            try {
+                transformer.transform(new StreamSource(pis), new StreamResult(output));
+            } catch (TransformerException e) {
+                transformerException = e;
+            }
 
-        // now handle exceptions, starting from the source
-        try {
-            future.get();
-        } catch (Exception e) {
-            throw new WFSException(
-                    "Failed to run the output format generating the source for the XSTL transformation",
-                    e);
-        }
-        if (transformerException != null) {
-            throw new WFSException(
-                    "Failed to run the the XSTL transformation", transformerException);
+            // now handle exceptions, starting from the source
+            try {
+                future.get();
+            } catch (Exception e) {
+                throw new WFSException(
+                        "Failed to run the output format generating the source for the XSTL transformation",
+                        e);
+            }
+            if (transformerException != null) {
+                throw new WFSException(
+                        "Failed to run the the XSTL transformation", transformerException);
+            }
         }
     }
 
@@ -337,9 +338,10 @@ public class XSLTOutputFormat extends WFSGetFeatureOutputFormat
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private Set<FeatureType> getFeatureTypes(FeatureCollectionResponse collections) {
-        Set<FeatureType> result = new HashSet<FeatureType>();
-        for (FeatureCollection<FeatureType, Feature> fc : collections.getFeatures()) {
+        Set<FeatureType> result = new HashSet<>();
+        for (FeatureCollection fc : collections.getFeatures()) {
             result.add(fc.getSchema());
         }
 

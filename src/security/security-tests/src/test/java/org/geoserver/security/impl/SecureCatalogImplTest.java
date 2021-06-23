@@ -87,6 +87,7 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.sort.SortBy;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+@SuppressWarnings("unchecked") // the hamcrest assertions in here are a unchecked warning nightmare
 public class SecureCatalogImplTest extends AbstractAuthorizationTest {
 
     public static final Logger LOGGER = Logging.getLogger(SecureCatalogImplTest.class);
@@ -95,6 +96,7 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
     public GeoServerExtensionsHelper.ExtensionsHelperRule extensions =
             new GeoServerExtensionsHelper.ExtensionsHelperRule();
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -488,7 +490,7 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
                             Integer offset,
                             Integer count,
                             SortBy sortBy) {
-                        return new CloseableIteratorAdapter<T>((Iterator<T>) layers.iterator());
+                        return new CloseableIteratorAdapter<>((Iterator<T>) layers.iterator());
                     }
                 };
         this.catalog = withLayers;
@@ -547,8 +549,8 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
         buildManager("publicRead.properties");
 
         // get the CloseableIterator from SecureCatalogImpl and close it
-        CloseableIterator<LayerInfo> iterator;
-        iterator = sc.list(LayerInfo.class, Predicates.acceptAll());
+        @SuppressWarnings("PMD.CloseResource")
+        CloseableIterator<LayerInfo> iterator = sc.list(LayerInfo.class, Predicates.acceptAll());
         iterator.close();
 
         // verify that the mock CloseableIterator was closed
@@ -666,8 +668,7 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
         expect(eoCatalog.getLayerGroups())
                 .andReturn(Arrays.asList(eoRoadsLayerGroup, eoStatesLayerGroup));
         expect(eoCatalog.list(eq(LayerGroupInfo.class), anyObject(Filter.class)))
-                .andReturn(
-                        new CloseableIteratorAdapter<LayerGroupInfo>(Collections.emptyIterator()))
+                .andReturn(new CloseableIteratorAdapter<>(Collections.emptyIterator()))
                 .anyTimes();
         replay(eoCatalog);
         this.catalog = eoCatalog;
@@ -1014,7 +1015,6 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
         List<LayerInfo> ly = catalog.getLayers();
         Iterator<LayerInfo> it1 = Iterators.filter(ly.iterator(), new PredicateFilter(security));
         // Checking if the roads layer is present
-        boolean hasRoadsLayer = false;
         // Ensure the base layer is present
         boolean hasBasesLayer = false;
         while (it1.hasNext()) {
@@ -1024,7 +1024,7 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
             hasBasesLayer |= next.equals(basesLayer);
         }
         assertTrue(hasBasesLayer);
-        hasRoadsLayer = false;
+        boolean hasRoadsLayer = false;
         hasBasesLayer = false;
         it1 = Iterators.filter(ly.iterator(), new PredicateFilter(security2));
         while (it1.hasNext()) {
@@ -1393,7 +1393,7 @@ public class SecureCatalogImplTest extends AbstractAuthorizationTest {
     static <T> List<T> collectAndClose(CloseableIterator<T> it) throws IOException {
         if (it == null) return null;
         try {
-            LinkedList<T> list = new LinkedList<T>();
+            LinkedList<T> list = new LinkedList<>();
             while (it.hasNext()) {
                 list.add(it.next());
             }

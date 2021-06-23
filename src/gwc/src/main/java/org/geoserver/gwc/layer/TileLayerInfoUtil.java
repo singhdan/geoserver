@@ -117,6 +117,8 @@ public class TileLayerInfoUtil {
         info.setMetaTilingY(defaults.getMetaTilingY());
         info.setInMemoryCached(true);
 
+        info.setCacheWarningSkips(defaults.getCacheWarningSkips());
+
         return info;
     }
 
@@ -207,7 +209,7 @@ public class TileLayerInfoUtil {
             final String defaultValue,
             final String... allowedValues) {
 
-        Set<String> validValues = new HashSet<String>();
+        Set<String> validValues = new HashSet<>();
         if (allowedValues != null) {
             validValues.addAll(Arrays.asList(allowedValues));
         }
@@ -234,15 +236,15 @@ public class TileLayerInfoUtil {
 
         createParam |= tileLayerInfo.removeParameterFilter(paramKey);
 
-        if (createParam && allowedValues != null && allowedValues.size() > 0) {
+        if (createParam && allowedValues != null && !allowedValues.isEmpty()) {
             // make sure default value is among the list of allowed values
-            Set<String> values = new TreeSet<String>(allowedValues);
+            Set<String> values = new TreeSet<>(allowedValues);
 
             StringParameterFilter stringListFilter = new StringParameterFilter();
             stringListFilter.setKey(paramKey);
             stringListFilter.setDefaultValue(defaultValue == null ? "" : defaultValue);
             values.addAll(stringListFilter.getValues());
-            stringListFilter.setValues(new ArrayList<String>(values));
+            stringListFilter.setValues(new ArrayList<>(values));
             tileLayerInfo.addParameterFilter(stringListFilter);
         }
     }

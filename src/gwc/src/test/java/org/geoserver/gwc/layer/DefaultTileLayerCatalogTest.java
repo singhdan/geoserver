@@ -14,22 +14,30 @@ import com.google.common.collect.ImmutableSet;
 import com.thoughtworks.xstream.XStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.apache.commons.io.FileUtils;
+import org.custommonkey.xmlunit.XMLUnit;
+import org.custommonkey.xmlunit.XpathEngine;
+import org.custommonkey.xmlunit.exceptions.XpathException;
 import org.geoserver.catalog.impl.ModificationProxy;
 import org.geoserver.config.util.SecureXStream;
 import org.geoserver.platform.GeoServerResourceLoader;
 import org.geoserver.platform.resource.FileSystemWatcher;
+import org.geoserver.util.DimensionWarning.WarningType;
 import org.geowebcache.config.ContextualConfigurationProvider.Context;
 import org.geowebcache.config.XMLConfiguration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.springframework.web.context.WebApplicationContext;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 public class DefaultTileLayerCatalogTest {
 
@@ -51,7 +59,7 @@ public class DefaultTileLayerCatalogTest {
         Supplier<XStream> xStream =
                 () ->
                         XMLConfiguration.getConfiguredXStreamWithContext(
-                                new SecureXStream(), (WebApplicationContext) null, Context.PERSIST);
+                                new SecureXStream(), null, Context.PERSIST);
 
         catalog = new DefaultTileLayerCatalog(resourceLoader, xStream);
         catalog.initialize();
@@ -179,23 +187,19 @@ public class DefaultTileLayerCatalogTest {
         AtomicBoolean hasBeenDeleted = new AtomicBoolean(false);
 
         catalog.addListener(
-                new TileLayerCatalogListener() {
-
-                    @Override
-                    public void onEvent(String layerId, Type type) {
-                        switch (type) {
-                            case CREATE:
-                                hasBeenCreated.set(true);
-                                break;
-                            case DELETE:
-                                hasBeenDeleted.set(true);
-                                break;
-                            case MODIFY:
-                                hasBeenModified.set(true);
-                                break;
-                            default:
-                                break;
-                        }
+                (layerId, type) -> {
+                    switch (type) {
+                        case CREATE:
+                            hasBeenCreated.set(true);
+                            break;
+                        case DELETE:
+                            hasBeenDeleted.set(true);
+                            break;
+                        case MODIFY:
+                            hasBeenModified.set(true);
+                            break;
+                        default:
+                            break;
                     }
                 });
 
@@ -206,7 +210,7 @@ public class DefaultTileLayerCatalogTest {
                 "<org.geoserver.gwc.layer.GeoServerTileLayerInfoImpl><id>id1</id><name>originalname</name></org.geoserver.gwc.layer.GeoServerTileLayerInfoImpl>",
                 "UTF-8");
 
-        int timeout = 1000;
+        int timeout = 60000; // allow for slow machines, won't make the test slower on fast ones
         waitForFlag(hasBeenCreated, timeout);
         GeoServerTileLayerInfo info = catalog.getLayerById("id1");
         assertEquals("originalname", info.getName());
@@ -243,5 +247,45 @@ public class DefaultTileLayerCatalogTest {
             counter++;
         }
         assertTrue(flag.get());
+    }
+
+    @Test
+    public void testSavedXML() throws IOException, SAXException, XpathException {
+        // checking that the persistence looks as expected
+        final GeoServerTileLayerInfo original;
+        {
+            final GeoServerTileLayerInfo info = new GeoServerTileLayerInfoImpl();
+            info.setId("id1");
+            info.setName("name1");
+            info.getMimeFormats().add("image/png");
+            info.getMimeFormats().add("image/jpeg");
+            info.setCacheWarningSkips(new LinkedHashSet<>(Arrays.asList(WarningType.values())));
+
+            StyleParameterFilter parameterFilter = new StyleParameterFilter();
+            parameterFilter.setStyles(Collections.emptySet());
+            info.addParameterFilter(parameterFilter);
+
+            assertNull(catalog.save(info));
+
+            original = catalog.getLayerById("id1");
+            assertEquals(info.getMimeFormats(), original.getMimeFormats());
+
+            original.getMimeFormats().clear();
+            original.getMimeFormats().add("image/gif");
+            original.setName("name2");
+        }
+
+        catalog.save(original);
+
+        File file = new File(baseDirectory, "gwc-layers/id1.xml");
+        String xml = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+
+        XpathEngine xpath = XMLUnit.newXpathEngine();
+        Document doc = XMLUnit.buildControlDocument(xml);
+        // no custom attribute for the class, we set a default
+        assertEquals("", xpath.evaluate("//cacheWarningSkips/class", doc));
+        assertEquals("Default", xpath.evaluate("//cacheWarningSkips/warning[1]", doc));
+        assertEquals("Nearest", xpath.evaluate("//cacheWarningSkips/warning[2]", doc));
+        assertEquals("FailedNearest", xpath.evaluate("//cacheWarningSkips/warning[3]", doc));
     }
 }

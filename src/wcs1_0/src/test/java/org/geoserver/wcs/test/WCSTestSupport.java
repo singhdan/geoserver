@@ -95,7 +95,7 @@ public abstract class WCSTestSupport extends CoverageTestSupport {
         super.onSetUp(testData);
 
         // init xmlunit
-        Map<String, String> namespaces = new HashMap<String, String>();
+        Map<String, String> namespaces = new HashMap<>();
         namespaces.put("wcs", "http://www.opengis.net/wcs");
         namespaces.put("ows", "http://www.opengis.net/ows/1.1");
         namespaces.put("gml", "http://www.opengis.net/gml");
@@ -109,6 +109,7 @@ public abstract class WCSTestSupport extends CoverageTestSupport {
         return IS_WINDOWS;
     }
 
+    @Override
     protected String checkOws11Exception(Document dom) throws Exception {
         assertEquals("ServiceExceptionReport", dom.getFirstChild().getNodeName());
 
@@ -134,7 +135,7 @@ public abstract class WCSTestSupport extends CoverageTestSupport {
         di.setEnabled(true);
         di.setPresentation(presentation);
         if (resolution != null) {
-            di.setResolution(new BigDecimal(resolution));
+            di.setResolution(BigDecimal.valueOf(resolution));
         }
         info.getMetadata().put(metadata, di);
         getCatalog().save(info);

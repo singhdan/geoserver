@@ -303,6 +303,53 @@ The evaluation of a filter is handled by the module in the following way:
   
   * in case the expression is not matched, the content, static or dynamic, will not be set, resulting in the attribute being skipped.
 
+Including other templates
+-------------------------
+
+While developing a group of templates, it's possible to notice sections that repeat across 
+different template instances. Template inclusion allows to share the common parts, extracting them
+in a re-usable building block.
+
+Inclusion can be performed using two directives:
+
+* :code:`$include` allows to include a separate JSON template as is.
+* :code:`$includeFlat` allows to include a separate JSON template, stripping the top-most container. If a JSON object is included, then its properties are directly included in-place, which makes sense only within another object. If instead a JSON array is included, then its values are directly included in-place, which makes sense only within another array.
+
+The following JSON snippet shows the four possible syntax options for template inclusion:
+
+.. code-block:: json
+   :linenos: 
+
+    {
+       "aProperty": "$include{subProperty.json}", 
+       "$includeFlat": "propsInAnObject.json", 
+       "anArray" : [
+          "$include{arrayElement.json}", 
+          "$includeFlat{subArray.json}" 
+       ]
+    }
+
+Notes:
+
+1) The ``subProperty.json`` template (line 2) can be both an object or an array, it will be used as the new value of ``aProperty``
+2) The ``propsInAnObject.json`` template (line 3) is required to be a JSON object, its properties will be 
+   directly included in-place where the ``$includeFlat`` directive is
+3) The ``arrayElement.json`` template (line 5) can be both an object or an array, the value will be replaced
+   directly as the new element in ``anArray``. This allows creation of a JSON object as the array
+   element, or the creation of a nested array.
+4) The ``subArray.json`` template (line 6) must be an array itself, the container array will be stripped and
+   its values directly integrated inside ``anArray``.
+
+Template names can be plain, as in this example, refer to sub-directories, or be absolute. 
+Examples of valid template references are:
+
+* ``subProperty.json``
+* ``./subProperty.json``
+* ``./blocks/aBlock.json``
+* ``/templates/test/aBlock.json``
+
+However it's currently not possible to climb up the directory hierarchy using relative references, 
+so a reference like ``../myParentBlock.json`` will be rejected. 
 
 Inspire GeoJSON Output
 ----------------------
@@ -387,3 +434,117 @@ The functionality allows also to manipulate dynamically filters and expression. 
 
 Xpaths can be manipulated as well to be totally or partially replaced: :code:`$${xpath(env('xpath','gsml:ControlledConcept/gsml:name')}` or :code:`$${xpath(strConcat('env('gsml:ControlledConcept',xpath','/gsml:name')))}`.
 
+JSON based properties
+---------------------
+
+Certain databases have native support for JSON fields. For example, PostgreSQL has both a JSON
+and a JSONB type. The JSON templating machinery can recognize these fields and export them
+as JSON blocks, for direct substitution in the output.
+
+It is also possible to pick a JSON attribute and use the ``jsonPointer`` function to extract either
+a property or a whole JSON subtree from it. See the `JSON Pointer RFC <https://datatracker.ietf.org/doc/html/rfc6901>`_ 
+for more details about valid expressions.
+
+Here is an example of using JSON properties:
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "assets": "${assets}",
+      "links": [
+        "$${jsonPointer(others, '/fullLink')}",
+        {
+          "href": "$${jsonPointer(others, '/otherLink/href')}",
+          "rel": "metadata",
+          "title": "$${jsonPointer(others, '/otherLink/title')}",
+          "type": "text/xml"
+        }
+      ]
+   }
+
+Some references:
+
+- ``Line 1`` uses ``assets``, a property that can contain a JSON tree of any shape, which will be 
+  expanded in place.
+- ``Line 4`` inserts a full JSON object in the array. The object is a sub-tree of the ``others`` property,
+  which is a complex JSON document with several extra properties (could be a generic containers for
+  properties not fitting the fixed database schema).
+- ``Line 6`` and ``Line 8`` extract from the ``others`` property specific string values.
+
+
+Array based properties
+----------------------
+
+Along JSON properties, it's not rare to find support for array based attributes in modern databases.
+E.g. ``varchar[]`` is a attributes containing an array of strings.
+
+The array properties can be used as-is, and they will be expanded into a JSON array.
+Let's assume the ``keywords`` database column contains a list of strings, then the following template:
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "keywords": "${keywords}"
+   }
+
+
+May expand into:
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "keywords": ["features", "templating"]
+   }
+
+It is also possible to use an array as the source of iteration, referencing the current
+array item using the ``${.}`` XPath. For example:
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "metadata": [
+         {
+            "$source": "keywords"
+         },
+         {
+            "type": "keyword",
+            "value": "${.}"
+         }
+      ]
+   }
+
+The above may expand into:
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "metadata": [
+         {
+            "type": "keyword",
+            "value": "features"
+         },
+         {
+            "type": "keyword",
+            "value": "templating"
+         }
+      ]
+   }
+
+In case a specific item of an array needs to be retrieved, the ``item`` function can be used,
+for example, the following template extracts the second item in an array (would fail if not
+present):
+
+.. code-block:: json
+   :linenos:
+
+   {
+      "second": "$${item(keywords, 1)}"
+   }
+
+
+There is currently no explicit support for array based columns in GML templates.

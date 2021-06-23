@@ -19,6 +19,7 @@ import org.geoserver.geofence.core.model.Rule;
 import org.geoserver.geofence.core.model.RuleLimits;
 import org.geoserver.geofence.core.model.enums.CatalogMode;
 import org.geoserver.geofence.core.model.enums.GrantType;
+import org.geoserver.geofence.core.model.enums.SpatialFilterType;
 import org.geoserver.geofence.services.RuleAdminService;
 import org.geoserver.geofence.services.dto.ShortRule;
 import org.geoserver.web.GeoServerApplication;
@@ -47,6 +48,7 @@ public class GeofenceRulesModel extends GeoServerDataProvider<ShortRule> {
             return null;
         }
 
+        @Override
         @SuppressWarnings({"unchecked", "rawtypes"})
         public IModel getModel(IModel<T> itemModel) { // replace null by *
             return new PropertyModel<Object>(itemModel, getPropertyPath()) {
@@ -61,34 +63,27 @@ public class GeofenceRulesModel extends GeoServerDataProvider<ShortRule> {
         }
     }
 
-    public static final Property<ShortRule> PRIORITY =
-            new BeanProperty<ShortRule>("priority", "priority");
+    public static final Property<ShortRule> PRIORITY = new BeanProperty<>("priority", "priority");
 
-    public static final Property<ShortRule> ROLE =
-            new RuleBeanProperty<ShortRule>("roleName", "roleName");
+    public static final Property<ShortRule> ROLE = new RuleBeanProperty<>("roleName", "roleName");
 
-    public static final Property<ShortRule> USER =
-            new RuleBeanProperty<ShortRule>("userName", "userName");
+    public static final Property<ShortRule> USER = new RuleBeanProperty<>("userName", "userName");
 
-    public static final Property<ShortRule> SERVICE =
-            new RuleBeanProperty<ShortRule>("service", "service");
+    public static final Property<ShortRule> SERVICE = new RuleBeanProperty<>("service", "service");
 
-    public static final Property<ShortRule> REQUEST =
-            new RuleBeanProperty<ShortRule>("request", "request");
+    public static final Property<ShortRule> REQUEST = new RuleBeanProperty<>("request", "request");
 
     public static final Property<ShortRule> WORKSPACE =
-            new RuleBeanProperty<ShortRule>("workspace", "workspace");
+            new RuleBeanProperty<>("workspace", "workspace");
 
-    public static final Property<ShortRule> LAYER =
-            new RuleBeanProperty<ShortRule>("layer", "layer");
+    public static final Property<ShortRule> LAYER = new RuleBeanProperty<>("layer", "layer");
 
-    public static final Property<ShortRule> ACCESS =
-            new RuleBeanProperty<ShortRule>("access", "access");
+    public static final Property<ShortRule> ACCESS = new RuleBeanProperty<>("access", "access");
 
     public static final Property<ShortRule> ADDRESS_RANGE =
-            new RuleBeanProperty<ShortRule>("addressRange", "addressRange");
+            new RuleBeanProperty<>("addressRange", "addressRange");
 
-    public static final Property<ShortRule> BUTTONS = new PropertyPlaceholder<ShortRule>("buttons");
+    public static final Property<ShortRule> BUTTONS = new PropertyPlaceholder<>("buttons");
 
     private static RuleAdminService adminService() {
         return (RuleAdminService) GeoServerApplication.get().getBean("ruleAdminService");
@@ -248,7 +243,11 @@ public class GeofenceRulesModel extends GeoServerDataProvider<ShortRule> {
         return rule;
     }
 
-    public void save(Long ruleId, MultiPolygon allowedArea, CatalogMode catalogMode) {
+    public void save(
+            Long ruleId,
+            MultiPolygon allowedArea,
+            SpatialFilterType spatialFilterType,
+            CatalogMode catalogMode) {
         Rule rule = adminService().get(ruleId);
         RuleLimits ruleLimits = rule.getRuleLimits();
         if (ruleLimits == null) {
@@ -256,6 +255,7 @@ public class GeofenceRulesModel extends GeoServerDataProvider<ShortRule> {
             ruleLimits.setRule(rule);
         }
         ruleLimits.setAllowedArea(allowedArea);
+        ruleLimits.setSpatialFilterType(spatialFilterType);
         ruleLimits.setCatalogMode(catalogMode);
         adminService().setLimits(ruleId, ruleLimits);
     }

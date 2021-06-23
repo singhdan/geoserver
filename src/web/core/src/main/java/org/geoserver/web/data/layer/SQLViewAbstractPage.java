@@ -45,9 +45,9 @@ import org.geoserver.web.wicket.GeoServerDataProvider.Property;
 import org.geoserver.web.wicket.GeoServerTablePanel;
 import org.geoserver.web.wicket.ParamResourceModel;
 import org.geotools.data.DataAccess;
+import org.geotools.data.DataUtilities;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
-import org.geotools.data.simple.SimpleFeatureIterator;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.jdbc.JDBCDataStore;
 import org.geotools.jdbc.VirtualTable;
@@ -227,7 +227,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
                         Fragment f = new Fragment(id, "text", SQLViewAbstractPage.this);
                         @SuppressWarnings("unchecked")
                         TextField<String> text =
-                                new TextField<String>(
+                                new TextField<>(
                                         "text", (IModel<String>) property.getModel(itemModel));
                         text.setLabel(
                                 new ParamResourceModel(
@@ -253,7 +253,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
                 guessCheckbox =
                         new CheckBox(
                                 "guessGeometrySrid",
-                                new PropertyModel<Boolean>(this, "guessGeometrySrid")));
+                                new PropertyModel<>(this, "guessGeometrySrid")));
         form.add(new CheckBox("escapeSql"));
 
         // the editable attribute table
@@ -265,7 +265,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
                             String id,
                             IModel<SQLViewAttribute> itemModel,
                             Property<SQLViewAttribute> property) {
-                        SQLViewAttribute att = (SQLViewAttribute) itemModel.getObject();
+                        SQLViewAttribute att = itemModel.getObject();
                         boolean isGeometry =
                                 att.getType() != null
                                         && Geometry.class.isAssignableFrom(att.getType());
@@ -277,7 +277,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
                         } else if (property == SQLViewAttributeProvider.TYPE && isGeometry) {
                             Fragment f = new Fragment(id, "geometry", SQLViewAbstractPage.this);
                             f.add(
-                                    new DropDownChoice<Class<? extends Geometry>>(
+                                    new DropDownChoice<>(
                                             "geometry",
                                             new PropertyModel<>(itemModel, "type"),
                                             GEOMETRY_TYPES,
@@ -285,9 +285,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
                             return f;
                         } else if (property == SQLViewAttributeProvider.SRID && isGeometry) {
                             Fragment f = new Fragment(id, "text", SQLViewAbstractPage.this);
-                            f.add(
-                                    new TextField<Integer>(
-                                            "text", new PropertyModel<Integer>(itemModel, "srid")));
+                            f.add(new TextField<>("text", new PropertyModel<>(itemModel, "srid")));
                             return f;
                         }
                         return null;
@@ -426,7 +424,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
     SimpleFeatureType guessFeatureType(
             JDBCDataStore store, String vtName, boolean guessGeometrySrid) throws IOException {
         SimpleFeatureType base = store.getSchema(vtName);
-        List<String> geometries = new ArrayList<String>();
+        List<String> geometries = new ArrayList<>();
         for (AttributeDescriptor ad : base.getAttributeDescriptors()) {
             if (ad instanceof GeometryDescriptor) {
                 geometries.add(ad.getLocalName());
@@ -434,7 +432,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
         }
 
         // no geometries? Or, shall we not try to guess the geometries type and srid?
-        if (geometries.size() == 0 || !guessGeometrySrid) {
+        if (geometries.isEmpty() || !guessGeometrySrid) {
             return base;
         }
 
@@ -443,18 +441,7 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
         Query q = new Query(vtName);
         q.setPropertyNames(geometries);
         q.setMaxFeatures(1);
-        SimpleFeatureIterator it = null;
-        SimpleFeature f = null;
-        try {
-            it = store.getFeatureSource(vtName).getFeatures(q).features();
-            if (it.hasNext()) {
-                f = it.next();
-            }
-        } finally {
-            if (it != null) {
-                it.close();
-            }
-        }
+        SimpleFeature f = DataUtilities.first(store.getFeatureSource(vtName).getFeatures(q));
 
         // did we get more information?
         if (f == null) {
@@ -539,10 +526,12 @@ public abstract class SQLViewAbstractPage extends GeoServerSecuredPage {
      */
     static class GeometryTypeRenderer extends ChoiceRenderer<Class<? extends Geometry>> {
 
+        @Override
         public Object getDisplayValue(Class<? extends Geometry> object) {
             return object.getSimpleName();
         }
 
+        @Override
         public String getIdValue(Class<? extends Geometry> object, int index) {
             return (String) getDisplayValue(object);
         }

@@ -7,12 +7,12 @@
 package org.geoserver.security.auth;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URLEncoder;
-import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
 import javax.servlet.http.Cookie;
@@ -49,7 +49,7 @@ import org.geoserver.security.impl.GeoServerUser;
 import org.geoserver.security.password.MasterPasswordProviderConfig;
 import org.geoserver.test.RunTestSetup;
 import org.geoserver.test.SystemTest;
-import org.geotools.data.Base64;
+import org.geotools.util.Base64;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -260,7 +260,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         // checkForAuthenticatedRole(auth);
         assertEquals(GeoServerUser.ROOT_USERNAME, auth.getPrincipal());
-        assertTrue(auth.getAuthorities().size() == 1);
+        assertEquals(1, auth.getAuthorities().size());
         assertTrue(auth.getAuthorities().contains(GeoServerRole.ADMIN_ROLE));
 
         // check root user with wrong password
@@ -450,7 +450,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         // checkForAuthenticatedRole(auth);
         assertEquals(GeoServerUser.ROOT_USERNAME, auth.getPrincipal());
-        assertTrue(auth.getAuthorities().size() == 2);
+        assertEquals(2, auth.getAuthorities().size());
         assertTrue(auth.getAuthorities().contains(GeoServerRole.ADMIN_ROLE));
 
         // check root user with wrong password
@@ -554,23 +554,12 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
             request.setMethod("GET");
             response = new MockHttpServletResponse();
             chain = new MockFilterChain();
-            request.setUserPrincipal(
-                    new Principal() {
-                        @Override
-                        public String getName() {
-                            return testUserName;
-                        }
-                    });
+            request.setUserPrincipal(() -> testUserName);
             if (rs == J2EERoleSource.Header) {
                 request.addHeader("roles", derivedRole + ";" + rootRole);
             }
             if (rs == J2EERoleSource.J2EE) {
-                if (true) {
-                    request.addUserRole(derivedRole);
-                }
-                if (false) {
-                    request.addUserRole(rootRole);
-                }
+                request.addUserRole(derivedRole);
             }
 
             getProxy().doFilter(request, response, chain);
@@ -596,13 +585,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.setMethod("GET");
         response = new MockHttpServletResponse();
         chain = new MockFilterChain();
-        request.setUserPrincipal(
-                new Principal() {
-                    @Override
-                    public String getName() {
-                        return GeoServerUser.ROOT_USERNAME;
-                    }
-                });
+        request.setUserPrincipal(() -> GeoServerUser.ROOT_USERNAME);
         getProxy().doFilter(request, response, chain);
 
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -618,7 +601,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         // checkForAuthenticatedRole(auth);
         assertEquals(GeoServerUser.ROOT_USERNAME, auth.getPrincipal());
-        assertTrue(auth.getAuthorities().size() == 1);
+        assertEquals(1, auth.getAuthorities().size());
         assertTrue(auth.getAuthorities().contains(GeoServerRole.ADMIN_ROLE));
 
         config.setRoleServiceName(null);
@@ -629,19 +612,8 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.setMethod("GET");
         response = new MockHttpServletResponse();
         chain = new MockFilterChain();
-        request.setUserPrincipal(
-                new Principal() {
-                    @Override
-                    public String getName() {
-                        return testUserName;
-                    }
-                });
-        if (true) {
-            request.addUserRole(derivedRole);
-        }
-        if (false) {
-            request.addUserRole(rootRole);
-        }
+        request.setUserPrincipal(() -> testUserName);
+        request.addUserRole(derivedRole);
         getProxy().doFilter(request, response, chain);
 
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -685,7 +657,6 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         config.setUserGroupServiceName("ug1");
         config.setPrincipalHeaderAttribute("principal");
         config.setRolesHeaderAttribute("roles");
-        ;
         getSecurityManager().saveFilter(config);
 
         prepareFilterChain(pattern, testFilterName4);
@@ -940,7 +911,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         // checkForAuthenticatedRole(auth);
         assertEquals(
                 GeoServerUser.ROOT_USERNAME, ((UserDetails) auth.getPrincipal()).getUsername());
-        assertTrue(auth.getAuthorities().size() == 1);
+        assertEquals(1, auth.getAuthorities().size());
         assertTrue(auth.getAuthorities().contains(GeoServerRole.ADMIN_ROLE));
 
         // check root user with wrong password
@@ -1057,7 +1028,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         checkForAuthenticatedRole(auth);
         assertEquals(1, response.getCookies().length);
-        Cookie cookie = (Cookie) response.getCookies()[0];
+        Cookie cookie = response.getCookies()[0];
 
         request = createRequest("/foo/bar");
         request.setMethod("GET");
@@ -1158,7 +1129,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, response.getStatus());
         // check for cancel cookie
         assertEquals(1, response.getCookies().length);
-        Cookie cancelCookie = (Cookie) response.getCookies()[0];
+        Cookie cancelCookie = response.getCookies()[0];
         assertNull(cancelCookie.getValue());
         updateUser("ug1", "abc@xyz.com", true);
     }
@@ -1200,7 +1171,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         MockFilterChain chain = new MockFilterChain();
 
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         String tmp = response.getHeader("Location");
         assertTrue(tmp.endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FORM));
         SecurityContext ctx =
@@ -1221,7 +1192,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), testUserName);
         request.addParameter(config.getPasswordParameterName(), testPassword);
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(
@@ -1257,7 +1228,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         chain = new MockFilterChain();
         // getProxy().doFilter(request, response, chain);
         logoutFilter.doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         tmp = response.getHeader("Location");
         assertNotNull(tmp);
         assertTrue(tmp.endsWith(GeoServerLogoutFilter.URL_AFTER_LOGOUT));
@@ -1271,7 +1242,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), testUserName);
         request.addParameter(config.getPasswordParameterName(), "wrongpass");
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FAILURE));
@@ -1293,7 +1264,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), "unknwon");
         request.addParameter(config.getPasswordParameterName(), testPassword);
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FAILURE));
@@ -1315,7 +1286,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), GeoServerUser.ROOT_USERNAME);
         request.addParameter(config.getPasswordParameterName(), getMasterPassword());
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(
@@ -1331,7 +1302,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         // checkForAuthenticatedRole(auth);
         assertEquals(GeoServerUser.ROOT_USERNAME, auth.getPrincipal());
-        assertTrue(auth.getAuthorities().size() == 1);
+        assertEquals(1, auth.getAuthorities().size());
         assertTrue(auth.getAuthorities().contains(GeoServerRole.ADMIN_ROLE));
 
         // check root user with wrong password
@@ -1342,7 +1313,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), GeoServerUser.ROOT_USERNAME);
         request.addParameter(config.getPasswordParameterName(), "geoserver1");
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FAILURE));
@@ -1364,7 +1335,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), testUserName);
         request.addParameter(config.getPasswordParameterName(), testPassword);
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FAILURE));
@@ -1426,7 +1397,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         MockFilterChain chain = new MockFilterChain();
 
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         String tmp = response.getHeader("Location");
         assertTrue(tmp.endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FORM));
         SecurityContext ctx =
@@ -1447,7 +1418,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), testUserName);
         request.addParameter(config.getPasswordParameterName(), testPassword);
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(
@@ -1466,7 +1437,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         assertTrue(auth.getAuthorities().contains(new GeoServerRole(rootRole)));
         assertTrue(auth.getAuthorities().contains(new GeoServerRole(derivedRole)));
         assertEquals(1, response.getCookies().length);
-        Cookie cookie = (Cookie) response.getCookies()[0];
+        Cookie cookie = response.getCookies()[0];
         assertNotNull(cookie.getValue());
 
         // check logout
@@ -1484,12 +1455,12 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
 
         // getProxy().doFilter(request, response, chain);
         logoutFilter.doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         tmp = response.getHeader("Location");
         assertNotNull(tmp);
         assertTrue(tmp.endsWith(GeoServerLogoutFilter.URL_AFTER_LOGOUT));
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        Cookie cancelCookie = (Cookie) response.getCookies()[0];
+        Cookie cancelCookie = response.getCookies()[0];
         assertNull(cancelCookie.getValue());
 
         // check no remember me for root user
@@ -1510,7 +1481,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         request.addParameter(config.getUsernameParameterName(), GeoServerUser.ROOT_USERNAME);
         request.addParameter(config.getPasswordParameterName(), getMasterPassword());
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         assertTrue(
                 response.getHeader("Location")
                         .endsWith(
@@ -1537,12 +1508,12 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
         response = new MockHttpServletResponse();
         chain = new MockFilterChain();
         getProxy().doFilter(request, response, chain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         tmp = response.getHeader("Location");
         assertTrue(tmp.endsWith(GeoServerUserNamePasswordAuthenticationFilter.URL_LOGIN_FORM));
         // check for cancel cookie
         assertEquals(1, response.getCookies().length);
-        cancelCookie = (Cookie) response.getCookies()[0];
+        cancelCookie = response.getCookies()[0];
         assertNull(cancelCookie.getValue());
         updateUser("ug1", testUserName, true);
     }
@@ -1594,12 +1565,7 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
                 request.addHeader("roles", derivedRole + ";" + rootRole);
             }
             if (rs == J2EERoleSource.J2EE) {
-                if (true) {
-                    request.addUserRole(derivedRole);
-                }
-                if (false) {
-                    request.addUserRole(rootRole);
-                }
+                request.addUserRole(derivedRole);
             }
 
             setCertifacteForUser(testUserName, request);
@@ -1631,14 +1597,6 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
             request.setMethod("GET");
             response = new MockHttpServletResponse();
             chain = new MockFilterChain();
-            if (rs == J2EERoleSource.J2EE) {
-                if (false) {
-                    request.addUserRole(derivedRole);
-                }
-                if (false) {
-                    request.addUserRole(rootRole);
-                }
-            }
             // TODO
             setCertifacteForUser("unknown", request);
             getProxy().doFilter(request, response, chain);
@@ -1817,12 +1775,12 @@ public class AuthenticationFilterTest extends AbstractAuthenticationProviderTest
 
         authchain = new MockFilterChain();
         getProxy().doFilter(request, response, authchain);
-        assertTrue(response.getStatus() == MockHttpServletResponse.SC_MOVED_TEMPORARILY);
+        assertEquals(response.getStatus(), MockHttpServletResponse.SC_MOVED_TEMPORARILY);
         String urlString = response.getHeader("Location");
         assertNotNull(urlString);
         assertTrue(urlString.startsWith("https"));
-        assertTrue(urlString.indexOf("a=b") != -1);
-        assertTrue(urlString.indexOf("443") != -1);
+        assertNotEquals(urlString.indexOf("a=b"), -1);
+        assertNotEquals(urlString.indexOf("443"), -1);
 
         chain.setRequireSSL(false);
         getSecurityManager().saveSecurityConfig(secConfig);

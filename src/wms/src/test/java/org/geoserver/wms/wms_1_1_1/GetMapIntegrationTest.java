@@ -7,6 +7,7 @@ package org.geoserver.wms.wms_1_1_1;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -25,7 +26,6 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -207,7 +207,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
                 "jiffleBandSelect", "jiffleBandSelect.sld", GetMapIntegrationTest.class, catalog);
         testData.addVectorLayer(
                 new QName(MockData.SF_URI, "states", MockData.SF_PREFIX),
-                Collections.EMPTY_MAP,
+                Collections.emptyMap(),
                 "states.properties",
                 getClass(),
                 catalog);
@@ -230,7 +230,16 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         testData.addStyle(
                 "transparencyFillWidth", "transparencyFillStyleWidth.sld", getClass(), catalog);
 
-        Map properties = new HashMap();
+        testData.addStyle(
+                "namedPlacesRenderingSelection",
+                "NamedPlacesRenderingSelection.sld",
+                getClass(),
+                catalog);
+
+        testData.addStyle(
+                "lakesRenderingSelection", "LakesRenderingSelection.sld", getClass(), catalog);
+
+        Map<LayerProperty, Object> properties = new HashMap<>();
         properties.put(LayerProperty.STYLE, "raster");
         testData.addRasterLayer(
                 MOSAIC_HOLES,
@@ -251,14 +260,14 @@ public class GetMapIntegrationTest extends WMSTestSupport {
 
         testData.addVectorLayer(
                 GIANT_POLYGON,
-                Collections.EMPTY_MAP,
+                Collections.emptyMap(),
                 "giantPolygon.properties",
                 SystemTestData.class,
                 getCatalog());
 
         testData.addVectorLayer(
                 LARGE_POLYGON,
-                Collections.EMPTY_MAP,
+                Collections.emptyMap(),
                 "slightlyLessGiantPolygon.properties",
                 GetMapTest.class,
                 getCatalog());
@@ -300,7 +309,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
                 new CoverageBand(
                         Collections.singletonList(ib2), "mosaic@0", 2, CompositionType.BAND_SELECT);
 
-        final List<CoverageBand> coverageBands = new ArrayList<CoverageBand>(3);
+        final List<CoverageBand> coverageBands = new ArrayList<>(3);
         coverageBands.add(b0);
         coverageBands.add(b1);
         coverageBands.add(b2);
@@ -490,10 +499,10 @@ public class GetMapIntegrationTest extends WMSTestSupport {
 
         // check the pixels that should be in the scale bar
         assertPixel(image, 56, 211, Color.WHITE);
-        // see GEOS-6482
+        // see GEOS-6482 and GEOS-9870
         assertTrue(
-                getPixelColor(image, 52, 221).equals(Color.BLACK)
-                        || getPixelColor(image, 52, 222).equals(Color.BLACK));
+                getPixelColor(image, 47, 221).equals(Color.BLACK)
+                        || getPixelColor(image, 47, 222).equals(Color.BLACK));
     }
 
     @Test
@@ -555,7 +564,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         assertEquals("inline; filename=sf-states.png", response.getHeader("Content-Disposition"));
     }
 
-    private org.apache.log4j.Logger getLog4JLogger(Class targetClass, String fieldName)
+    private org.apache.log4j.Logger getLog4JLogger(Class<?> targetClass, String fieldName)
             throws NoSuchFieldException, IllegalAccessException {
         Field field = targetClass.getDeclaredField(fieldName);
         field.setAccessible(true);
@@ -582,11 +591,12 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         assertEquals("image/png; mode=8bit", response.getContentType());
         assertEquals("inline; filename=sf-states.png", response.getHeader("Content-Disposition"));
 
-        InputStream is = getBinaryInputStream(response);
-        BufferedImage bi = ImageIO.read(is);
-        IndexColorModel cm = (IndexColorModel) bi.getColorModel();
-        assertEquals(Transparency.OPAQUE, cm.getTransparency());
-        assertEquals(-1, cm.getTransparentPixel());
+        try (InputStream is = getBinaryInputStream(response)) {
+            BufferedImage bi = ImageIO.read(is);
+            IndexColorModel cm = (IndexColorModel) bi.getColorModel();
+            assertEquals(Transparency.OPAQUE, cm.getTransparency());
+            assertEquals(-1, cm.getTransparentPixel());
+        }
     }
 
     @Test
@@ -605,11 +615,12 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         assertEquals("image/png; mode=8bit", response.getContentType());
         assertEquals("inline; filename=sf-states.png", response.getHeader("Content-Disposition"));
 
-        InputStream is = getBinaryInputStream(response);
-        BufferedImage bi = ImageIO.read(is);
-        IndexColorModel cm = (IndexColorModel) bi.getColorModel();
-        assertEquals(Transparency.BITMASK, cm.getTransparency());
-        assertTrue(cm.getTransparentPixel() >= 0);
+        try (InputStream is = getBinaryInputStream(response)) {
+            BufferedImage bi = ImageIO.read(is);
+            IndexColorModel cm = (IndexColorModel) bi.getColorModel();
+            assertEquals(Transparency.BITMASK, cm.getTransparency());
+            assertTrue(cm.getTransparentPixel() >= 0);
+        }
     }
 
     @Test
@@ -628,10 +639,11 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         assertEquals("image/png; mode=8bit", response.getContentType());
         assertEquals("inline; filename=sf-states.png", response.getHeader("Content-Disposition"));
 
-        InputStream is = getBinaryInputStream(response);
-        BufferedImage bi = ImageIO.read(is);
-        IndexColorModel cm = (IndexColorModel) bi.getColorModel();
-        assertEquals(Transparency.TRANSLUCENT, cm.getTransparency());
+        try (InputStream is = getBinaryInputStream(response)) {
+            BufferedImage bi = ImageIO.read(is);
+            IndexColorModel cm = (IndexColorModel) bi.getColorModel();
+            assertEquals(Transparency.TRANSLUCENT, cm.getTransparency());
+        }
     }
 
     @Test
@@ -1014,7 +1026,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         BufferedImage bi = getAsImage(url, "image/png");
         int[] pixel = new int[4];
         bi.getRaster().getPixel(0, 250, pixel);
-        assertTrue(Arrays.equals(new int[] {0, 0, 0, 255}, pixel));
+        assertArrayEquals(new int[] {0, 0, 0, 255}, pixel);
 
         // now reconfigure the mosaic for transparency
         CoverageInfo ci = getCatalog().getCoverageByName("sf:mosaic_holes");
@@ -1026,7 +1038,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         // this time that pixel should be transparent
         bi = getAsImage(url, "image/png");
         bi.getRaster().getPixel(0, 250, pixel);
-        assertTrue(Arrays.equals(new int[] {255, 255, 255, 0}, pixel));
+        assertArrayEquals(new int[] {255, 255, 255, 0}, pixel);
     }
 
     @Test
@@ -1189,7 +1201,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
                                 + "&srs=EPSG:4326&format_options=layout:test-layout-sldtitle;dpi:"
                                 + dpi,
                         "image/png");
-        // RenderedImageBrowser.showChain(image);
+        // RenderedImageBrowser.showChain(image, false, false, "Foobar", true);
         // check the pixels that should be in the legend
         assertPixel(image, 15, 67, Color.RED);
         assertPixel(image, 15, 107, Color.GREEN);
@@ -1549,9 +1561,10 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         assertEquals(
                 "inline; filename=cite-BasicPolygons.jpg",
                 resp.getHeader(HttpHeaders.CONTENT_DISPOSITION));
-        InputStream is = getBinaryInputStream(resp);
-        BufferedImage image = ImageIO.read(is);
-        assertNotBlank("testJpegPngOpaque", image);
+        try (InputStream is = getBinaryInputStream(resp)) {
+            BufferedImage image = ImageIO.read(is);
+            assertNotBlank("testJpegPngOpaque", image);
+        }
     }
 
     @Test
@@ -1765,6 +1778,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testWFSNGReprojection() throws Exception {
         String baseURL = TestHttpClientProvider.MOCKSERVER;
         MockHttpClient client = new MockHttpClient();
@@ -1819,17 +1833,11 @@ public class GetMapIntegrationTest extends WMSTestSupport {
         CatalogBuilder cb = new CatalogBuilder(getCatalog());
         DataStoreInfo storeInfo = cb.buildDataStore("MockWFSDataStore");
         ((DataStoreInfoImpl) storeInfo).setId("1");
-        ((DataStoreInfoImpl) storeInfo).setType("Web Feature Server (NG)");
-        ((DataStoreInfoImpl) storeInfo)
-                .getConnectionParameters()
-                .put(WFSDataStoreFactory.URL.key, url);
-        ((DataStoreInfoImpl) storeInfo)
-                .getConnectionParameters()
-                .put("usedefaultsrs", Boolean.FALSE);
-        ((DataStoreInfoImpl) storeInfo)
-                .getConnectionParameters()
-                .put(WFSDataStoreFactory.PROTOCOL.key, Boolean.FALSE);
-        ((DataStoreInfoImpl) storeInfo).getConnectionParameters().put("TESTING", Boolean.TRUE);
+        storeInfo.setType("Web Feature Server (NG)");
+        storeInfo.getConnectionParameters().put(WFSDataStoreFactory.URL.key, url);
+        storeInfo.getConnectionParameters().put("usedefaultsrs", Boolean.FALSE);
+        storeInfo.getConnectionParameters().put(WFSDataStoreFactory.PROTOCOL.key, Boolean.FALSE);
+        storeInfo.getConnectionParameters().put("TESTING", Boolean.TRUE);
         getCatalog().add(storeInfo);
 
         // MOCKING Feature Type with native CRS EPSG:26713
@@ -1838,7 +1846,7 @@ public class GetMapIntegrationTest extends WMSTestSupport {
                 xp.load(
                         getClass().getResourceAsStream("/geoserver/wfs-ng/featuretype.xml"),
                         FeatureTypeInfoImpl.class);
-        ((FeatureTypeInfoImpl) ftInfo).setStore(storeInfo);
+        ftInfo.setStore(storeInfo);
         ((FeatureTypeInfoImpl) ftInfo).setMetadata(new MetadataMap());
         ftInfo.setSRS("EPSG:26713");
         ftInfo.getMetadata().put(FeatureTypeInfo.OTHER_SRS, "EPSG:4326,urn:ogc:def:crs:EPSG::3857");
@@ -2292,5 +2300,71 @@ public class GetMapIntegrationTest extends WMSTestSupport {
             assertPixel(imageFill, i, 638, Color.RED);
             assertPixel(imageFill, i, 639, Color.RED);
         }
+    }
+
+    @Test
+    public void testNamedPlacesRenderingSelection() throws Exception {
+        // We have two set of rules in the style one for the map having
+        // test <VendorOption name=renderingLegend>false</VendorOption>
+        // and one for the legend having test
+        // <VendorOption name=renderingMap>false</VendorOption>
+        // the final result obtained with a legend decorator should show
+        // polygons and legend icons with same colors but icons without black border
+        Catalog catalog = getCatalog();
+        File layouts = getDataDirectory().findOrCreateDir("layouts");
+        URL layout = GetMapIntegrationTest.class.getResource("../test-layout-legend-image.xml");
+        FileUtils.copyURLToFile(layout, new File(layouts, "test-layout-legend-image.xml"));
+        LayerInfo places = catalog.getLayerByName(getLayerId(MockData.NAMED_PLACES));
+        StyleInfo placesStyle = catalog.getStyleByName("namedPlacesRenderingSelection");
+        LegendInfoImpl legend = new LegendInfoImpl();
+        legend.setFormat("image/png;charset=utf-8");
+        legend.setHeight(32);
+        legend.setWidth(32);
+        placesStyle.setLegend(legend);
+        catalog.save(placesStyle);
+        places.getStyles().add(placesStyle);
+        catalog.save(places);
+        String url =
+                "wms?LAYERS="
+                        + places.getName()
+                        + "&STYLES=namedPlacesRenderingSelection&FORMAT=image%2Fpng"
+                        + "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG%3A4326&WIDTH=256"
+                        + "&HEIGHT=256&BBOX=0.0000,-0.0020,0.0035,0.0010&format_options=layout:test-layout-legend-image";
+        BufferedImage image = getAsImage(url, "image/png");
+        URL urlPng = getClass().getResource("renderingSelectionNamedPlaces.png");
+        ImageAssert.assertEquals(new File(urlPng.toURI()), image, 1300);
+    }
+
+    @Test
+    public void testLakesWithRenderingSelection() throws Exception {
+        // We have two featureTypeStyle in the style one for the map having
+        // test <VendorOption name=renderingLegend>false</VendorOption>
+        // and one for the legend having test
+        // <VendorOption name=renderingMap>false</VendorOption>
+        // the final result obtained with a legend decorator should show
+        // polygon and legend icon with same color but icon without black border
+        Catalog catalog = getCatalog();
+        File layouts = getDataDirectory().findOrCreateDir("layouts");
+        URL layout = GetMapIntegrationTest.class.getResource("../test-layout-legend-image.xml");
+        FileUtils.copyURLToFile(layout, new File(layouts, "test-layout-legend-image.xml"));
+        LayerInfo lakes = catalog.getLayerByName(getLayerId(MockData.LAKES));
+        StyleInfo lakesStyle = catalog.getStyleByName("lakesRenderingSelection");
+        LegendInfoImpl legend = new LegendInfoImpl();
+        legend.setFormat("image/png;charset=utf-8");
+        legend.setHeight(32);
+        legend.setWidth(32);
+        lakesStyle.setLegend(legend);
+        catalog.save(lakesStyle);
+        lakes.getStyles().add(lakesStyle);
+        catalog.save(lakes);
+        String url =
+                "wms?LAYERS="
+                        + lakes.getName()
+                        + "&STYLES=lakesRenderingSelection&FORMAT=image%2Fpng"
+                        + "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG%3A4326&WIDTH=256"
+                        + "&HEIGHT=256&BBOX=0.0000,-0.0020,0.0035,0.0010&format_options=layout:test-layout-legend-image";
+        BufferedImage image = getAsImage(url, "image/png");
+        URL urlPng = getClass().getResource("renderingSelectionLakes.png");
+        ImageAssert.assertEquals(new File(urlPng.toURI()), image, 1300);
     }
 }

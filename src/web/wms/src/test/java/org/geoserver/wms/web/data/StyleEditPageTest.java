@@ -5,12 +5,14 @@
  */
 package org.geoserver.wms.web.data;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -18,6 +20,7 @@ import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -34,6 +37,7 @@ import org.apache.wicket.feedback.FeedbackMessage;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.TextArea;
 import org.apache.wicket.markup.html.form.TextField;
+import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.util.tester.FormTester;
 import org.apache.wicket.util.tester.WicketTester;
 import org.apache.wicket.util.tester.WicketTesterHelper;
@@ -66,7 +70,12 @@ import org.geoserver.web.wicket.GeoServerTablePanel;
 import org.geoserver.wms.web.data.publish.WMSLayerConfigTest;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.styling.FeatureTypeStyle;
+import org.geotools.styling.Style;
+import org.geotools.styling.StyleBuilder;
+import org.geotools.styling.visitor.DuplicatingStyleVisitor;
 import org.geotools.util.URLs;
+import org.geotools.xml.styling.SLDTransformer;
 import org.junit.Before;
 import org.junit.Test;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -77,6 +86,12 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
 
     StyleInfo buildingsStyle;
     StyleEditPage edit;
+
+    @Override
+    protected void setUpSpring(List<String> springContextLocations) {
+        super.setUpSpring(springContextLocations);
+        springContextLocations.add("classpath*:/org/geoserver/wms/web/data/StyleComponentBean.xml");
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -381,7 +396,7 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
     public void testLayerAssociationsTab() {
 
         LayerInfo l = getCatalog().getLayers().get(0);
-        assertFalse(l.getDefaultStyle() == buildingsStyle);
+        assertNotSame(l.getDefaultStyle(), buildingsStyle);
         tester.executeAjaxEvent("styleForm:context:tabs-container:tabs:1:link", "click");
         tester.assertComponent("styleForm:context:panel:layer.table", GeoServerTablePanel.class);
 
@@ -503,7 +518,7 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
 
     @Test
     public void testValidateEntityExpansion() throws Exception {
-        String xml = IOUtils.toString(TestData.class.getResource("externalEntities.sld"), "UTF-8");
+        String xml = IOUtils.toString(TestData.class.getResource("externalEntities.sld"), UTF_8);
 
         // tester.debugComponentTrees();
         tester.newFormTester("styleForm")
@@ -730,7 +745,7 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
     public void testLayerPreviewTab() {
 
         LayerInfo l = getCatalog().getLayers().get(0);
-        assertFalse(l.getDefaultStyle() == buildingsStyle);
+        assertNotSame(l.getDefaultStyle(), buildingsStyle);
         // used to fail with an exception here because the template file cannot be found
         tester.executeAjaxEvent("styleForm:context:tabs-container:tabs:2:link", "click");
         print(tester.getLastRenderedPage(), true, true);
@@ -741,7 +756,7 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
     public void testLayerPreviewTabStyleGroup() {
 
         LayerInfo l = getCatalog().getLayers().get(0);
-        assertFalse(l.getDefaultStyle() == buildingsStyle);
+        assertNotSame(l.getDefaultStyle(), buildingsStyle);
         // used to fail with an exception here because the template file cannot be found
         tester.executeAjaxEvent("styleForm:context:tabs-container:tabs:2:link", "click");
 
@@ -955,5 +970,69 @@ public class StyleEditPageTest extends GeoServerWicketTestSupport {
 
         tester.executeAjaxEvent("validate", "click");
         tester.assertNoErrorMessage();
+    }
+
+    @Test
+    public void testStyleComponents() {
+        // Reload the page
+        tester.startPage(
+                new StyleEditPage(getCatalog().getStyleByName(MockData.BUILDINGS.getLocalPart())));
+
+        // check for correct bean initialization
+        getGeoServerApplication().getApplicationContext().getBean("style-component-mock");
+
+        // check for correct registration by Extension
+        List<StyleComponentInfo> compInfo =
+                getGeoServerApplication().getBeansOfType(StyleComponentInfo.class);
+        assertEquals(1, compInfo.size());
+
+        // check for correct embedding in page
+        tester.assertComponent(
+                "styleForm:style-component-mock", StyleEditPageTest.MockStyleComponent.class);
+    }
+
+    @Test
+    public void testInvalidMark() throws Exception {
+        // GEOS-10013 tests that with a big style there is no error message MarkInvalid throw by the
+        // SLDHandler
+        // method getVersionAndReader
+
+        // generate a long style
+        StyleBuilder styleBuilder = new StyleBuilder();
+        DuplicatingStyleVisitor duplicatingStyleVisitor = new DuplicatingStyleVisitor();
+        buildingsStyle.getStyle().accept(duplicatingStyleVisitor);
+        Style style = (Style) duplicatingStyleVisitor.getCopy();
+        FeatureTypeStyle typeStyle = style.featureTypeStyles().get(0);
+        for (int i = 0; i < 30; i++) {
+            FeatureTypeStyle fts =
+                    styleBuilder.createFeatureTypeStyle(
+                            typeStyle.getName() + i, typeStyle.rules().get(0));
+            style.featureTypeStyles().add(fts);
+        }
+        SLDTransformer transformer = new SLDTransformer();
+        StringWriter writer = new StringWriter();
+        transformer.transform(style, writer);
+        String sld = writer.toString();
+
+        // test that the Mark invalid error message not appears doesn't occur
+        tester.newFormTester("styleForm")
+                .setValue("styleEditor:editorContainer:editorParent:editor", sld);
+
+        tester.executeAjaxEvent("validate", "click");
+        tester.assertNoErrorMessage();
+    }
+
+    public static class MockStyleComponentInfo extends StyleComponentInfo {
+        public MockStyleComponentInfo(String id, AbstractStylePage clazz) {
+            super("test", clazz);
+        }
+
+        public MockStyleComponentInfo() {}
+    }
+
+    public static class MockStyleComponent extends Panel {
+        public MockStyleComponent(String id, AbstractStylePage clazz) {
+            super("style-component-mock");
+        }
     }
 }

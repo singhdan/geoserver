@@ -6,6 +6,7 @@
 
 package org.geoserver.test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -181,9 +182,9 @@ public class RestconfigWfsTest extends CatalogRESTTestSupport {
      */
     @Test
     public void testRestconfig() throws Exception {
-        MockHttpServletResponse response;
         // create workspace
-        response = postAsServletResponse("/rest/workspaces", WORKSPACE, "text/xml");
+        MockHttpServletResponse response =
+                postAsServletResponse("/rest/workspaces", WORKSPACE, "text/xml");
         assertEquals(201, response.getStatus());
         WorkspaceInfo ws = getCatalog().getWorkspaceByName("gsml");
         assertNotNull(ws);
@@ -227,14 +228,14 @@ public class RestconfigWfsTest extends CatalogRESTTestSupport {
                         "MappedFeature");
         dir.mkdirs();
         File propertiesFile = new File(dir, "MAPPEDFEATURE.properties");
-        IOUtils.copy(new ByteArrayInputStream(PROPERTIES.getBytes("UTF-8")), propertiesFile);
+        IOUtils.copy(new ByteArrayInputStream(PROPERTIES.getBytes(UTF_8)), propertiesFile);
 
         String mapping = MAPPING;
         String onlineTestId = System.getProperty("testDatabase");
         if (onlineTestId != null) {
             // if test if running in online mode, need to use db params
             onlineTestId = onlineTestId.trim().toLowerCase();
-            Map<String, File> propertyFiles = new HashMap<String, File>();
+            Map<String, File> propertyFiles = new HashMap<>();
             propertyFiles.put(propertiesFile.getName(), dir);
             AbstractReferenceDataSetup setup;
             if (onlineTestId.equals("oracle")) {
@@ -257,7 +258,7 @@ public class RestconfigWfsTest extends CatalogRESTTestSupport {
             setup.tearDown();
         }
         IOUtils.copy(
-                new ByteArrayInputStream(mapping.getBytes("UTF-8")),
+                new ByteArrayInputStream(mapping.getBytes(UTF_8)),
                 new File(dir, "MappedFeature.xml"));
     }
 
@@ -292,7 +293,7 @@ public class RestconfigWfsTest extends CatalogRESTTestSupport {
     /** Assert that there are count occurrences of xpath. */
     private void assertXpathCount(int count, String xpath, Document document) throws Exception {
         XpathEngine xpathEngine = XMLUnit.newXpathEngine();
-        Map<String, String> namespaces = new HashMap<String, String>();
+        Map<String, String> namespaces = new HashMap<>();
         namespaces.put("wfs", "http://www.opengis.net/wfs");
         namespaces.put("gsml", "urn:cgi:xmlns:CGI:GeoSciML:2.0");
         xpathEngine.setNamespaceContext(new SimpleNamespaceContext(namespaces));

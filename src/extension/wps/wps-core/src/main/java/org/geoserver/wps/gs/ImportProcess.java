@@ -7,12 +7,14 @@ package org.geoserver.wps.gs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.media.jai.Interpolation;
 import org.geoserver.catalog.Catalog;
@@ -346,7 +348,7 @@ public class ImportProcess implements GeoServerProcess {
                         catalog.getResourceLoader().get(Paths.path("data", workspace, store));
                 final File file = File.createTempFile(store, ".tif", directory.dir());
                 ((CoverageStoreInfo) storeInfo).setURL(URLs.fileToUrl(file).toExternalForm());
-                ((CoverageStoreInfo) storeInfo).setType("GeoTIFF");
+                storeInfo.setType("GeoTIFF");
 
                 // check the target crs
                 CoordinateReferenceSystem cvCrs = coverage.getCoordinateReferenceSystem();
@@ -444,7 +446,7 @@ public class ImportProcess implements GeoServerProcess {
                 }
 
                 // coverage read params
-                final Map customParameters = new HashMap();
+                final Map<String, Serializable> customParameters = new HashMap<>();
                 /*
                  * String useJAIImageReadParam = "USE_JAI_IMAGEREAD"; if (useJAIImageReadParam != null) {
                  * customParameters.put(AbstractGridFormat.USE_JAI_IMAGEREAD.getName().toString(), Boolean.valueOf(useJAIImageReadParam)); }
@@ -472,7 +474,7 @@ public class ImportProcess implements GeoServerProcess {
                         if (coverages.size() == 1) {
                             existing = coverages.get(0);
                         }
-                        if (coverages.size() == 0) {
+                        if (coverages.isEmpty()) {
                             // no coverages yet configured, change add flag and continue on
                             add = true;
                         } else {
@@ -551,7 +553,7 @@ public class ImportProcess implements GeoServerProcess {
             } catch (IOException e) {
                 throw new ProcessException("I/O Exception", e);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.log(Level.WARNING, "", e);
                 throw new ProcessException("Exception", e);
             }
         }
@@ -565,7 +567,6 @@ public class ImportProcess implements GeoServerProcess {
             DataStoreInfo storeInfo,
             ProgressListener listener)
             throws IOException, ProcessException {
-        SimpleFeatureType targetType;
         // grab the data store
         DataStore ds = (DataStore) storeInfo.getDataStore(null);
 
@@ -583,7 +584,7 @@ public class ImportProcess implements GeoServerProcess {
 
         // try to get the target feature type (might have slightly different
         // name and structure)
-        targetType = ds.getSchema(sourceType.getTypeName());
+        SimpleFeatureType targetType = ds.getSchema(sourceType.getTypeName());
         if (targetType == null) {
             // ouch, the name was changed... we can only guess now...
             // try with the typical Oracle mangling
@@ -612,10 +613,24 @@ public class ImportProcess implements GeoServerProcess {
         // exact mapping to be performed
         Map<String, String> mapping = buildAttributeMapping(sourceType, targetType);
 
+        copyFeatures(features, listener, ds, targetType, mapping);
+
+        return targetType;
+    }
+
+    // cannot use in try/resource, just to rollback
+    @SuppressWarnings({"PMD.CloseResource", "PMD.UseTryWithResources"})
+    private void copyFeatures(
+            SimpleFeatureCollection features,
+            ProgressListener listener,
+            DataStore ds,
+            SimpleFeatureType targetType,
+            Map<String, String> mapping)
+            throws IOException {
         // start a transaction and fill the target with the input features
         SimpleFeatureStore fstore =
                 (SimpleFeatureStore) ds.getFeatureSource(targetType.getTypeName());
-        @SuppressWarnings("PMD.CloseResource") // cannot use in try/resource, just to rollback
+
         Transaction t = new DefaultTransaction();
         fstore.setTransaction(t);
         boolean complete = false;
@@ -642,8 +657,6 @@ public class ImportProcess implements GeoServerProcess {
             }
             t.close();
         }
-
-        return targetType;
     }
 
     private void checkForCancellation(ProgressListener listener) {
@@ -662,14 +675,14 @@ public class ImportProcess implements GeoServerProcess {
         // shapefile store it will move the geometry and name it the_geom
 
         // collect the source names
-        Set<String> sourceNames = new HashSet<String>();
+        Set<String> sourceNames = new HashSet<>();
         for (AttributeDescriptor sd : sourceType.getAttributeDescriptors()) {
             sourceNames.add(sd.getLocalName());
         }
 
         // first check if we have been kissed by sheer luck and the names are
         // the same
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, String> result = new HashMap<>();
         for (String name : sourceNames) {
             if (targetType.getDescriptor(name) != null) {
                 result.put(name, name);

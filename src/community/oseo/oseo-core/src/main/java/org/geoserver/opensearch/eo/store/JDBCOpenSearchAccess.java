@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.WordUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.geoserver.config.GeoServer;
 import org.geoserver.opensearch.eo.ProductClass;
@@ -70,7 +71,7 @@ import org.opengis.filter.PropertyIsEqualTo;
  *
  * @author Andrea Aime - GeoSolutions
  */
-public class JDBCOpenSearchAccess implements OpenSearchAccess {
+public class JDBCOpenSearchAccess implements org.geoserver.opensearch.eo.store.OpenSearchAccess {
 
     protected static FilterFactory2 FF = CommonFactoryFinder.getFilterFactory2();
 
@@ -81,6 +82,8 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
     public static final String GRANULE = "granule";
 
     static final String EO_PREFIX = "eo";
+
+    static final String EOP_PREFIX = "eop";
 
     static final String SAR_PREFIX = "sar";
 
@@ -121,7 +124,7 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
             throw new IOException("Missing required tables in the backing store " + missingTables);
         }
 
-        collectionFeatureType = buildCollectionFeatureType(delegate);
+        collectionFeatureType = buildCollectionFeatureType(delegate, this.namespaceURI);
         productFeatureType = buildProductFeatureType(delegate);
     }
 
@@ -129,7 +132,8 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         return namespaceURI;
     }
 
-    private FeatureType buildCollectionFeatureType(DataStore delegate) throws IOException {
+    private FeatureType buildCollectionFeatureType(DataStore delegate, String namespaceURI)
+            throws IOException {
         SimpleFeatureType flatSchema = delegate.getSchema(COLLECTION);
 
         TypeBuilder typeBuilder = new OrderedTypeBuilder();
@@ -138,13 +142,15 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         for (AttributeDescriptor ad : flatSchema.getAttributeDescriptors()) {
             AttributeTypeBuilder ab = new AttributeTypeBuilder();
             String name = ad.getLocalName();
-            String namespaceURI = this.namespaceURI;
+            String prefix = "";
+            String attributeNamespace = namespaceURI;
             if (name.startsWith(EO_PREFIX)) {
                 name = name.substring(EO_PREFIX.length());
-                char c[] = name.toCharArray();
+                char[] c = name.toCharArray();
                 c[0] = Character.toLowerCase(c[0]);
                 name = new String(c);
-                namespaceURI = EO_NAMESPACE;
+                attributeNamespace = EO_NAMESPACE;
+                prefix = EO_PREFIX;
             }
             // get a more predictable name structure (will have to do something for oracle
             // like names too I guess)
@@ -154,15 +160,18 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
             // map into output type
             ab.init(ad);
             ab.setMinOccurs(0);
-            ab.name(name).namespaceURI(namespaceURI).userData(SOURCE_ATTRIBUTE, ad.getLocalName());
+            ab.name(name)
+                    .namespaceURI(attributeNamespace)
+                    .userData(SOURCE_ATTRIBUTE, ad.getLocalName());
+            ab.userData(PREFIX, prefix);
             AttributeDescriptor mappedDescriptor;
             if (ad instanceof GeometryDescriptor) {
                 GeometryType at = ab.buildGeometryType();
                 ab.setCRS(((GeometryDescriptor) ad).getCoordinateReferenceSystem());
-                mappedDescriptor = ab.buildDescriptor(new NameImpl(namespaceURI, name), at);
+                mappedDescriptor = ab.buildDescriptor(new NameImpl(attributeNamespace, name), at);
             } else {
                 AttributeType at = ab.buildType();
-                mappedDescriptor = ab.buildDescriptor(new NameImpl(namespaceURI, name), at);
+                mappedDescriptor = ab.buildDescriptor(new NameImpl(attributeNamespace, name), at);
             }
 
             typeBuilder.add(mappedDescriptor);
@@ -170,20 +179,21 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
 
         // adding the metadata property
         AttributeDescriptor metadataDescriptor =
-                buildSimpleDescriptor(METADATA_PROPERTY_NAME, String.class);
+                buildSimpleDescriptor(METADATA_PROPERTY_NAME, EO_PREFIX, String.class);
         typeBuilder.add(metadataDescriptor);
 
         // adding the layer publishing property
-        Name layerPropertyName = new NameImpl(this.namespaceURI, OpenSearchAccess.LAYERS);
         AttributeDescriptor layerDescriptor =
                 buildFeatureListDescriptor(
-                        LAYERS_PROPERTY_NAME, delegate.getSchema("collection_ogclink"));
+                        LAYERS_PROPERTY_NAME, EO_PREFIX, delegate.getSchema("collection_ogclink"));
         typeBuilder.add(layerDescriptor);
 
         // map OGC links
         AttributeDescriptor linksDescriptor =
                 buildFeatureListDescriptor(
-                        OGC_LINKS_PROPERTY_NAME, delegate.getSchema("collection_ogclink"));
+                        OGC_LINKS_PROPERTY_NAME,
+                        EO_PREFIX,
+                        delegate.getSchema("collection_ogclink"));
         typeBuilder.add(linksDescriptor);
 
         typeBuilder.setName(COLLECTION);
@@ -191,26 +201,57 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         return typeBuilder.feature();
     }
 
-    private AttributeDescriptor buildSimpleDescriptor(Name name, Class binding) {
+    private AttributeDescriptor buildSimpleDescriptor(Name name, String prefix, Class<?> binding) {
         AttributeTypeBuilder ab = new AttributeTypeBuilder();
         ab.name(name.getLocalPart()).namespaceURI(name.getNamespaceURI());
         ab.setBinding(binding);
+        ab.userData(PREFIX, prefix);
         AttributeDescriptor descriptor = ab.buildDescriptor(name, ab.buildType());
         return descriptor;
     }
 
-    private AttributeDescriptor buildFeatureListDescriptor(Name name, SimpleFeatureType schema) {
-        return buildFeatureDescriptor(name, schema, 0, Integer.MAX_VALUE);
+    private AttributeDescriptor buildFeatureListDescriptor(
+            Name name, String prefix, SimpleFeatureType schema) {
+        return buildFeatureDescriptor(name, prefix, schema, 0, Integer.MAX_VALUE);
     }
 
     private AttributeDescriptor buildFeatureDescriptor(
-            Name name, SimpleFeatureType schema, int minOccurs, int maxOccurs) {
+            Name name, String prefix, SimpleFeatureType schema, int minOccurs, int maxOccurs) {
         AttributeTypeBuilder ab = new AttributeTypeBuilder();
-        ab.name(name.getLocalPart()).namespaceURI(name.getNamespaceURI());
+        String ns = name.getNamespaceURI();
+        ab.name(name.getLocalPart()).namespaceURI(ns);
         ab.setMinOccurs(minOccurs);
         ab.setMaxOccurs(maxOccurs);
+        ab.userData(PREFIX, prefix);
+        AttributeDescriptor descriptor = ab.buildDescriptor(name, applyNamespace(ns, schema));
+        return descriptor;
+    }
+
+    private AttributeDescriptor buildFeatureDescriptor(
+            Name name, String prefix, FeatureType schema, int minOccurs, int maxOccurs) {
+        AttributeTypeBuilder ab = new AttributeTypeBuilder();
+        String ns = name.getNamespaceURI();
+        ab.name(name.getLocalPart()).namespaceURI(ns);
+        ab.setMinOccurs(minOccurs);
+        ab.setMaxOccurs(maxOccurs);
+        ab.userData(PREFIX, prefix);
         AttributeDescriptor descriptor = ab.buildDescriptor(name, schema);
         return descriptor;
+    }
+
+    private FeatureType applyNamespace(String namespaceURI, SimpleFeatureType schema) {
+        TypeBuilder tb = new OrderedTypeBuilder();
+        tb.setName(schema.getTypeName());
+        tb.setNamespaceURI(namespaceURI);
+        AttributeTypeBuilder ab = new AttributeTypeBuilder();
+        for (AttributeDescriptor ad : schema.getAttributeDescriptors()) {
+            ab.init(ad);
+            ab.setNamespaceURI(namespaceURI);
+            NameImpl name = new NameImpl(namespaceURI, ad.getLocalName());
+            AttributeDescriptor newDescriptor = ab.buildDescriptor(name, ab.buildType());
+            tb.add(newDescriptor);
+        }
+        return tb.feature();
     }
 
     private FeatureType buildProductFeatureType(DataStore delegate) throws IOException {
@@ -223,18 +264,21 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         for (AttributeDescriptor ad : flatSchema.getAttributeDescriptors()) {
             String name = ad.getLocalName();
             String namespaceURI = this.namespaceURI;
+            String prefix = "";
             // hack to avoid changing the whole product attributes prefixes from eo to eop
             if (name.startsWith(EO_PREFIX)) {
                 name = "eop" + name.substring(2);
+                prefix = EOP_PREFIX;
             }
             for (ProductClass pc : ProductClass.getProductClasses(geoServer)) {
-                String prefix = pc.getPrefix();
-                if (name.startsWith(prefix)) {
-                    name = name.substring(prefix.length());
-                    char c[] = name.toCharArray();
+                String pcPrefix = pc.getPrefix();
+                if (name.startsWith(pcPrefix)) {
+                    name = name.substring(pcPrefix.length());
+                    char[] c = name.toCharArray();
                     c[0] = Character.toLowerCase(c[0]);
                     name = new String(c);
                     namespaceURI = pc.getNamespace();
+                    prefix = pcPrefix;
                     break;
                 }
             }
@@ -248,6 +292,7 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
             ab.init(ad);
             ab.setMinOccurs(0);
             ab.name(name).namespaceURI(namespaceURI).userData(SOURCE_ATTRIBUTE, ad.getLocalName());
+            ab.userData(PREFIX, prefix);
             AttributeDescriptor mappedDescriptor;
             if (ad instanceof GeometryDescriptor) {
                 GeometryType at = ab.buildGeometryType();
@@ -262,19 +307,25 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         }
         // adding the metadata property
         AttributeDescriptor metadataDescriptor =
-                buildSimpleDescriptor(METADATA_PROPERTY_NAME, String.class);
+                buildSimpleDescriptor(METADATA_PROPERTY_NAME, EO_PREFIX, String.class);
         typeBuilder.add(metadataDescriptor);
 
         // adding the quicklook property
         AttributeDescriptor quicklookDescriptor =
-                buildSimpleDescriptor(QUICKLOOK_PROPERTY_NAME, byte[].class);
+                buildSimpleDescriptor(QUICKLOOK_PROPERTY_NAME, EO_PREFIX, byte[].class);
         typeBuilder.add(quicklookDescriptor);
 
         // map OGC links
         AttributeDescriptor linksDescriptor =
                 buildFeatureListDescriptor(
-                        OGC_LINKS_PROPERTY_NAME, delegate.getSchema("product_ogclink"));
+                        OGC_LINKS_PROPERTY_NAME, EO_PREFIX, delegate.getSchema("product_ogclink"));
         typeBuilder.add(linksDescriptor);
+
+        // the product collection itself
+        FeatureType collectionType = buildCollectionFeatureType(delegate, EO_NAMESPACE);
+        AttributeDescriptor collectionDescriptor =
+                buildFeatureDescriptor(COLLECTION_PROPERTY_NAME, EO_PREFIX, collectionType, 0, 1);
+        typeBuilder.add(collectionDescriptor);
 
         typeBuilder.setName(PRODUCT);
         typeBuilder.setNamespaceURI(namespaceURI);
@@ -464,6 +515,9 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         // get the product type, if any (might be a virtual collection)
         SimpleFeature collectionFeature =
                 getCollectionFeature(collection, delegate, collectionTableName);
+        if (collectionFeature == null)
+            throw new IOException("Collection " + collection + " not found");
+
         String sensorType = (String) collectionFeature.getAttribute("eoSensorType");
         ProductClass productClass = null;
         if (sensorType != null) {
@@ -473,33 +527,8 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         final String dbSchema = delegate.getDatabaseSchema();
         // build the joining SQL
         StringJoiner attributes = new StringJoiner(", ");
-        // collection attributes
-        ContentFeatureSource collectionSource = delegate.getFeatureSource(collectionTableName);
-        for (AttributeDescriptor ad : collectionSource.getSchema().getAttributeDescriptors()) {
-            if (ad.getLocalName().startsWith(JDBCOpenSearchAccess.EO_PREFIX)) {
-                String column = encodeColumn(dialect, "collection", ad.getLocalName());
-                if (ad.getLocalName().equals("eoIdentifier")) {
-                    attributes.add(column + " as \"collectionEoIdentifier\"");
-                } else if (!"eoAcquisitionStation".equals(ad.getLocalName())) {
-                    // add everything that's not duplicate
-                    attributes.add(column);
-                }
-            }
-        }
-        // product attributes
-        ContentFeatureSource productSource = delegate.getFeatureSource(productTableName);
-        for (AttributeDescriptor ad : productSource.getSchema().getAttributeDescriptors()) {
-            final String localName = ad.getLocalName();
-            if (localName.startsWith(JDBCOpenSearchAccess.EO_PREFIX)
-                    || "timeStart".equals(localName)
-                    || "timeEnd".equals(localName)
-                    || "crs".equals(localName)
-                    || (productClass != null && localName.startsWith(productClass.getPrefix()))
-                    || (productClass == null && matchesAnyProductClass(localName))) {
-                String column = encodeColumn(dialect, "product", localName);
-                attributes.add(column);
-            }
-        }
+        Set<String> names = new HashSet<>();
+
         // granule attributes
         SimpleFeatureType granuleSchema = delegate.getSchema(granuleTableName);
         String productIdColumn = null;
@@ -513,8 +542,9 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
             } else if ("product_id".equalsIgnoreCase(localName)) {
                 productIdColumn = localName;
             } else {
-                String column = encodeColumn(dialect, "granule", ad.getLocalName());
+                String column = encodeColumn(dialect, "granule", localName);
                 attributes.add(column);
+                names.add(localName);
             }
             if ("the_geom".equalsIgnoreCase(localName)) {
                 theGeomName = localName;
@@ -523,8 +553,45 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
             }
         }
 
+        // product attributes
+        ContentFeatureSource productSource = delegate.getFeatureSource(productTableName);
+        for (AttributeDescriptor ad : productSource.getSchema().getAttributeDescriptors()) {
+            final String localName = ad.getLocalName();
+            if (localName.startsWith(JDBCOpenSearchAccess.EO_PREFIX)
+                    || "timeStart".equals(localName)
+                    || "timeEnd".equals(localName)
+                    || "crs".equals(localName)
+                    || (productClass != null && localName.startsWith(productClass.getPrefix()))
+                    || (productClass == null && matchesAnyProductClass(localName))) {
+                String column = encodeColumn(dialect, "product", localName);
+                attributes.add(column);
+                names.add(localName);
+            }
+        }
+
+        // collection attributes
+        ContentFeatureSource collectionSource = delegate.getFeatureSource(collectionTableName);
+        for (AttributeDescriptor ad : collectionSource.getSchema().getAttributeDescriptors()) {
+            String localName = ad.getLocalName();
+            if (localName.startsWith(JDBCOpenSearchAccess.EO_PREFIX)) {
+                String column = encodeColumn(dialect, "collection", localName);
+                if (names.contains(localName)) {
+                    int counter = 1;
+                    String base = "collection" + WordUtils.capitalize(localName);
+                    String alias = base;
+                    while (names.contains(alias)) {
+                        alias = base + counter++;
+                    }
+                    attributes.add(column + " as \"" + alias + "\"");
+                    names.add(alias);
+                } else {
+                    attributes.add(column);
+                }
+            }
+        }
+
         StringBuffer sb = new StringBuffer("SELECT ");
-        sb.append(attributes.toString());
+        sb.append(attributes);
         sb.append("\n");
         sb.append(" FROM ");
         encodeTableName(dialect, dbSchema, granuleTableName, sb);
@@ -634,10 +701,12 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
         }
     }
 
+    @Override
     public FeatureStore<FeatureType, Feature> getProductSource() throws IOException {
         return new JDBCProductFeatureStore(this, productFeatureType);
     }
 
+    @Override
     public FeatureStore<FeatureType, Feature> getCollectionSource() throws IOException {
         return new JDBCCollectionFeatureStore(this, collectionFeatureType);
     }
@@ -709,6 +778,7 @@ public class JDBCOpenSearchAccess implements OpenSearchAccess {
                 (SimpleFeatureStore) delegate.getFeatureSource(granuleTableName);
         try {
             return new WritableDataView(granulesStore, granulesQuery) {
+                @Override
                 public java.util.List<org.opengis.filter.identity.FeatureId> addFeatures(
                         org.geotools.feature.FeatureCollection<SimpleFeatureType, SimpleFeature>
                                 featureCollection)

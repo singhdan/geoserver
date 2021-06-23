@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Utility class for handling Resource paths in a consistent fashion.
@@ -106,7 +107,7 @@ public class Paths {
         if (path == null || (path.length == 1 && path[0] == null)) {
             return null;
         }
-        ArrayList<String> names = new ArrayList<String>();
+        ArrayList<String> names = new ArrayList<>();
         for (String item : path) {
             names.addAll(names(item));
         }
@@ -144,7 +145,7 @@ public class Paths {
      */
     static final Pattern WARN = Pattern.compile("^[^:*,\'&?\"<>|]*$");
     /** Set of invalid resource names (currently used to quickly identify relative paths). */
-    static final Set<String> INVALID = new HashSet<String>(Arrays.asList(new String[] {"..", "."}));
+    static final Set<String> INVALID = new HashSet<>(Arrays.asList(new String[] {"..", "."}));
 
     /**
      * Internal method used to convert a list of names to a normal Resource path.
@@ -163,15 +164,14 @@ public class Paths {
                 continue; // skip null names
             }
             if (INVALID.contains(item)) {
-                throw new IllegalArgumentException("Contains invalid " + item + " path: " + buf);
+                reportInvalidPath(names, item);
             }
             if (!VALID.matcher(item).matches()) {
-                throw new IllegalArgumentException("Contains invalid " + item + " path: " + buf);
+                reportInvalidPath(names, item);
             }
             if (!WARN.matcher(item).matches()) {
                 if (strictPath) {
-                    throw new IllegalArgumentException(
-                            "Contains invalid " + item + " path: " + buf);
+                    return reportInvalidPath(names, item);
                 }
             }
             buf.append(item);
@@ -180,6 +180,14 @@ public class Paths {
             }
         }
         return buf.toString();
+    }
+
+    private static String reportInvalidPath(List<String> names, String item) {
+        throw new IllegalArgumentException(
+                "Contains invalid '"
+                        + item
+                        + "' path: "
+                        + names.stream().collect(Collectors.joining("/")));
     }
 
     /**
@@ -226,7 +234,7 @@ public class Paths {
         if (split == -1) {
             return Collections.singletonList(path);
         }
-        ArrayList<String> names = new ArrayList<String>(3);
+        ArrayList<String> names = new ArrayList<>(3);
         String item;
         do {
             item = path.substring(index, split);
@@ -291,7 +299,7 @@ public class Paths {
         List<String> folderPath = names(convert(base, folder));
         List<String> filePath = names(convert(fileLocation));
 
-        List<String> resolvedPath = new ArrayList<String>(folderPath.size() + filePath.size());
+        List<String> resolvedPath = new ArrayList<>(folderPath.size() + filePath.size());
         resolvedPath.addAll(folderPath);
 
         for (String item : filePath) {
@@ -327,7 +335,7 @@ public class Paths {
         List<String> folderPath = names(convert(base, folder));
         List<String> filePath = Arrays.asList(location);
 
-        List<String> resolvedPath = new ArrayList<String>(folderPath.size() + filePath.size());
+        List<String> resolvedPath = new ArrayList<>(folderPath.size() + filePath.size());
         resolvedPath.addAll(folderPath);
 
         for (String item : filePath) {
@@ -390,7 +398,7 @@ public class Paths {
         List<String> folderPath = names(path);
         List<String> filePath = names(convert(filename));
 
-        List<String> resolvedPath = new ArrayList<String>(folderPath.size() + filePath.size());
+        List<String> resolvedPath = new ArrayList<>(folderPath.size() + filePath.size());
         resolvedPath.addAll(folderPath);
 
         for (String item : filePath) {

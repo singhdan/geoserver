@@ -66,6 +66,7 @@ public class GWCTransactionListener implements TransactionCallback {
      * Not used, we're interested in the {@link #dataStoreChange} and {@link #afterTransaction}
      * hooks
      */
+    @Override
     public TransactionRequest beforeTransaction(TransactionRequest request) throws WFSException {
         // nothing to do
         return request;
@@ -77,6 +78,7 @@ public class GWCTransactionListener implements TransactionCallback {
      *
      * @see org.geoserver.wfs.TransactionPlugin#beforeCommit(net.opengis.wfs.TransactionRequest)
      */
+    @Override
     public void beforeCommit(TransactionRequest request) throws WFSException {
         // nothing to do
     }
@@ -87,6 +89,7 @@ public class GWCTransactionListener implements TransactionCallback {
      *
      * @see org.geoserver.wfs.TransactionPlugin#afterTransaction
      */
+    @Override
     public void afterTransaction(
             final TransactionRequest request, TransactionResponse result, boolean committed) {
         if (!committed) {
@@ -134,7 +137,7 @@ public class GWCTransactionListener implements TransactionCallback {
     private ReferencedEnvelope merge(
             final String tileLayerName, final List<ReferencedEnvelope> dirtyList)
             throws TransformException, FactoryException {
-        if (dirtyList.size() == 0) {
+        if (dirtyList.isEmpty()) {
             return null;
         }
 
@@ -157,6 +160,7 @@ public class GWCTransactionListener implements TransactionCallback {
      * @return {@code 0}, we don't need any special treatment
      * @see org.geoserver.wfs.TransactionPlugin#getPriority()
      */
+    @Override
     public int getPriority() {
         return 0;
     }
@@ -167,6 +171,7 @@ public class GWCTransactionListener implements TransactionCallback {
      * @see
      *     org.geoserver.wfs.TransactionListener#dataStoreChange(org.geoserver.wfs.TransactionEvent)
      */
+    @Override
     public void dataStoreChange(final TransactionEvent event) throws WFSException {
         log.info("DataStoreChange: " + event.getLayerName() + " " + event.getType());
         try {
@@ -217,12 +222,11 @@ public class GWCTransactionListener implements TransactionCallback {
             final TransactionRequest transaction) {
 
         final Map<Object, Object> extendedProperties = transaction.getExtendedProperties();
-        Map<String, List<ReferencedEnvelope>> byLayerDirtyRegions;
-        byLayerDirtyRegions =
+        Map<String, List<ReferencedEnvelope>> byLayerDirtyRegions =
                 (Map<String, List<ReferencedEnvelope>>)
                         extendedProperties.get(GWC_TRANSACTION_INFO_PLACEHOLDER);
         if (byLayerDirtyRegions == null) {
-            byLayerDirtyRegions = new HashMap<String, List<ReferencedEnvelope>>();
+            byLayerDirtyRegions = new HashMap<>();
             extendedProperties.put(GWC_TRANSACTION_INFO_PLACEHOLDER, byLayerDirtyRegions);
         }
         return byLayerDirtyRegions;
@@ -238,7 +242,7 @@ public class GWCTransactionListener implements TransactionCallback {
 
         List<ReferencedEnvelope> layerDirtyRegion = byLayerDirtyRegions.get(tileLayerName);
         if (layerDirtyRegion == null) {
-            layerDirtyRegion = new ArrayList<ReferencedEnvelope>(2);
+            layerDirtyRegion = new ArrayList<>(2);
             byLayerDirtyRegions.put(tileLayerName, layerDirtyRegion);
         }
         layerDirtyRegion.add(affectedBounds);

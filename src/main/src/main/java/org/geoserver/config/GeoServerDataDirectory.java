@@ -103,8 +103,8 @@ public class GeoServerDataDirectory {
         return resourceLoader;
     }
 
-    public Resource get(String path) {
-        return resourceLoader.get(path);
+    public Resource get(String... path) {
+        return resourceLoader.get(Paths.path(path));
     }
 
     /** The root of the data directory. */
@@ -788,7 +788,7 @@ public class GeoServerDataDirectory {
     // SLD Manipulation
 
     List<Resource> additionalStyleResources(StyleInfo s) throws IOException {
-        final List<Resource> resources = new ArrayList<Resource>();
+        final List<Resource> resources = new ArrayList<>();
         final Resource baseDir = get(s);
         try {
             Style parsedStyle = parsedStyleResources(s);

@@ -13,6 +13,7 @@ import static org.junit.Assert.assertNotNull;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import javax.imageio.ImageIO;
 import org.apache.commons.io.IOUtils;
 import org.geoserver.test.GeoServerSystemTestSupport;
@@ -23,32 +24,34 @@ public class SLDWithInlineFeatureTest extends GeoServerSystemTestSupport {
 
     @Test
     public void testSLDWithInlineFeatureWMS() throws Exception {
-        BufferedReader reader =
+        try (BufferedReader reader =
                 new BufferedReader(
                         new InputStreamReader(
-                                getClass().getResourceAsStream("SLDWithInlineFeature.xml")));
-        String line;
-        StringBuilder builder = new StringBuilder();
+                                getClass().getResourceAsStream("SLDWithInlineFeature.xml")))) {
+            String line;
+            StringBuilder builder = new StringBuilder();
 
-        while ((line = reader.readLine()) != null) {
-            builder.append(line);
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+
+            assertStatusCodeForPost(200, "wms", builder.toString(), "text/xml");
+
+            // this is the test; an exception will be thrown if no image was rendered
+            BufferedImage image =
+                    ImageIO.read(
+                            getBinaryInputStream(postAsServletResponse("wms", builder.toString())));
+
+            assertNotNull(image);
         }
-
-        assertStatusCodeForPost(200, "wms", builder.toString(), "text/xml");
-
-        // this is the test; an exception will be thrown if no image was rendered
-        BufferedImage image =
-                ImageIO.read(
-                        getBinaryInputStream(postAsServletResponse("wms", builder.toString())));
-
-        assertNotNull(image);
     }
 
     @Test
     public void testGetMapPostEntityExpansion() throws Exception {
         String body =
                 IOUtils.toString(
-                        getClass().getResourceAsStream("GetMapExternalEntity.xml"), "UTF-8");
+                        getClass().getResourceAsStream("GetMapExternalEntity.xml"),
+                        StandardCharsets.UTF_8);
         MockHttpServletResponse response = postAsServletResponse("wms", body);
         // should fail with an error message pointing at entity resolution
         assertEquals("application/vnd.ogc.se_xml", response.getContentType());

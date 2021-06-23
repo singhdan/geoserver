@@ -65,7 +65,7 @@ public class GeoTIFFMapResponse extends RenderedImageMapResponse {
      * <p>We should soon support multipage tiff.
      */
     private static MapProducerCapabilities CAPABILITIES =
-            new MapProducerCapabilities(true, false, true, true, null);
+            new MapProducerCapabilities(true, true, true);
 
     public GeoTIFFMapResponse(final WMS wms) {
         super(OUTPUT_FORMATS, wms);
@@ -91,11 +91,12 @@ public class GeoTIFFMapResponse extends RenderedImageMapResponse {
 
         // NoData stuff
         if (image instanceof PlanarImage) {
-            Map properties = gc.getProperties();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> properties = gc.getProperties();
             if (properties == null) {
-                properties = new HashMap();
+                properties = new HashMap<>();
             }
-            Object property = ((PlanarImage) image).getProperty(NoDataContainer.GC_NODATA);
+            Object property = image.getProperty(NoDataContainer.GC_NODATA);
             if (property != null) {
                 CoverageUtilities.setNoDataProperty(properties, property);
                 gc =
@@ -110,27 +111,16 @@ public class GeoTIFFMapResponse extends RenderedImageMapResponse {
         }
 
         // writing it out
-        final ImageOutputStream imageOutStream =
-                ImageIOExt.createImageOutputStream(image, outStream);
-        if (imageOutStream == null) {
-            throw new ServiceException("Unable to create ImageOutputStream.");
-        }
-
         GeoTiffWriter writer = null;
+        try (ImageOutputStream imageOutStream =
+                ImageIOExt.createImageOutputStream(image, outStream)) {
+            if (imageOutStream == null) {
+                throw new ServiceException("Unable to create ImageOutputStream.");
+            }
 
-        // write it out
-        try {
             writer = new GeoTiffWriter(imageOutStream);
             writer.write(gc, null);
         } finally {
-            try {
-                imageOutStream.close();
-            } catch (Throwable e) {
-                // eat exception to release resources silently
-                if (LOGGER.isLoggable(Level.FINEST))
-                    LOGGER.log(Level.FINEST, "Unable to properly close output stream", e);
-            }
-
             try {
                 if (writer != null) writer.dispose();
             } catch (Throwable e) {

@@ -5,8 +5,8 @@
 package org.geoserver.wms.vector;
 
 import static org.geotools.renderer.lite.VectorMapRenderUtils.getStyleQuery;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ import org.geoserver.config.GeoServerLoader;
 import org.geoserver.platform.GeoServerExtensionsHelper;
 import org.geoserver.wms.GetMapRequest;
 import org.geoserver.wms.MapLayerInfo;
-import org.geoserver.wms.WMS;
 import org.geoserver.wms.WMSMapContent;
 import org.geoserver.wms.WebMap;
 import org.geoserver.wms.mapbox.MapBoxTileBuilderFactory;
@@ -61,7 +61,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
 import org.mockito.Mockito;
@@ -77,24 +76,18 @@ public class VectorTileMapOutputFormatTest {
 
     private static CoordinateReferenceSystem WGS84;
 
-    private static Style defaultPointStyle,
-            defaultLineStyle,
-            defaultPolygonStyle,
-            scaleDependentPolygonStyle;
-
-    private WMS wmsMock;
+    private static Style defaultPointStyle, defaultPolygonStyle, scaleDependentPolygonStyle;
 
     private VectorTileMapOutputFormat outputFormat;
 
     private VectorTileBuilder tileBuilderMock;
 
-    private FeatureLayer pointLayer, lineLayer, polygonLayer, scaleDependentPolygonLayer;
+    private FeatureLayer pointLayer, scaleDependentPolygonLayer;
     private List<MapContent> mapContents = new ArrayList<>();
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         defaultPointStyle = parseStyle("default_point.sld");
-        defaultLineStyle = parseStyle("default_line.sld");
         defaultPolygonStyle = parseStyle("default_polygon.sld");
         scaleDependentPolygonStyle = parseStyle("scaleDependentPolygonStyle.sld");
 
@@ -107,8 +100,6 @@ public class VectorTileMapOutputFormatTest {
 
     @Before
     public void before() throws Exception {
-        wmsMock = mock(WMS.class);
-
         tileBuilderMock = mock(VectorTileBuilder.class);
 
         VectorTileBuilderFactory tileBuilderFactory = mock(VectorTileBuilderFactory.class);
@@ -178,8 +169,6 @@ public class VectorTileMapOutputFormatTest {
                         "POLYGON ((11 11, 12 12, 13 13, 14 14, 11 11))"));
 
         pointLayer = new FeatureLayer(ds.getFeatureSource("points"), defaultPointStyle);
-        lineLayer = new FeatureLayer(ds.getFeatureSource("lines"), defaultLineStyle);
-        polygonLayer = new FeatureLayer(ds.getFeatureSource("polygons"), defaultPolygonStyle);
         scaleDependentPolygonLayer =
                 new FeatureLayer(ds.getFeatureSource("polygons"), scaleDependentPolygonStyle);
     }
@@ -204,7 +193,7 @@ public class VectorTileMapOutputFormatTest {
                 createMapContent(mapBounds, renderingArea, 0, scaleDependentPolygonLayer);
 
         Query q = getStyleQuery(scaleDependentPolygonLayer, mapContent);
-        assertTrue(q.getFilter() != Filter.EXCLUDE);
+        assertNotSame(q.getFilter(), Filter.EXCLUDE);
 
         // ------------------- abnormal case, there are no rules in the sld that will draw
 
@@ -215,7 +204,7 @@ public class VectorTileMapOutputFormatTest {
         mapContent = createMapContent(mapBounds, renderingArea, 0, scaleDependentPolygonLayer);
 
         q = getStyleQuery(scaleDependentPolygonLayer, mapContent);
-        assertTrue(q.getFilter() == Filter.EXCLUDE);
+        assertSame(q.getFilter(), Filter.EXCLUDE);
     }
 
     // the calculated style buffer must account for oversampling
@@ -243,9 +232,14 @@ public class VectorTileMapOutputFormatTest {
                         any(ReferencedEnvelope.class),
                         any(Rectangle.class),
                         any(CoordinateReferenceSystem.class),
-                        any(Set.class),
+                        anyKeySet(),
                         any(Hints.class),
                         eq(expectedBuffer));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<RenderingHints.Key> anyKeySet() {
+        return (Set<RenderingHints.Key>) any(Set.class);
     }
 
     @Test
@@ -267,35 +261,40 @@ public class VectorTileMapOutputFormatTest {
                         eq("point1"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point2"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point3"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointFar"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("pointNear"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> anyProperties() {
+        return any(Map.class);
     }
 
     @Test
@@ -321,35 +320,35 @@ public class VectorTileMapOutputFormatTest {
                         eq("point1"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point2"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point3"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointFar"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("pointNear"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
     }
 
     @Test
@@ -371,35 +370,35 @@ public class VectorTileMapOutputFormatTest {
                         eq("point1"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point2"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point3"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointFar"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointNear"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
     }
 
     @Test
@@ -422,35 +421,35 @@ public class VectorTileMapOutputFormatTest {
                         eq("point1"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, times(1))
                 .addFeature(
                         eq("points"),
                         eq("point2"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("point3"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointFar"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
         verify(tileBuilderMock, never())
                 .addFeature(
                         eq("points"),
                         eq("pointNear"),
                         eq("geom"),
                         any(Geometry.class),
-                        any(Map.class));
+                        anyProperties());
     }
 
     private WMSMapContent createMapContent(
@@ -497,7 +496,7 @@ public class VectorTileMapOutputFormatTest {
 
         request.setLayers(layers);
         request.setStyles(styles);
-        request.setBbox((Envelope) requestEnvelope);
+        request.setBbox(requestEnvelope);
         request.setCrs(requestEnvelope.getCoordinateReferenceSystem());
         if (requestEnvelope.getCoordinateReferenceSystem() == WGS84) {
             request.setSRS("EPSG:4326");
@@ -508,7 +507,7 @@ public class VectorTileMapOutputFormatTest {
         }
         request.setWidth(renderingArea.width);
         request.setHeight(renderingArea.height);
-        request.setRawKvp(new HashMap<String, String>());
+        request.setRawKvp(new HashMap<>());
         request.setBuffer(buffer);
         return request;
     }
@@ -584,7 +583,7 @@ public class VectorTileMapOutputFormatTest {
                         any(ReferencedEnvelope.class),
                         any(Rectangle.class),
                         any(CoordinateReferenceSystem.class),
-                        any(Set.class),
+                        anyKeySet(),
                         argThat((Hints qH) -> qH.containsKey(Hints.GEOMETRY_DISTANCE)),
                         any(Integer.class));
     }

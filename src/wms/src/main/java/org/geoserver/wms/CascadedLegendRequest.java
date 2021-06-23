@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.logging.Logger;
 import net.sf.json.JSONArray;
@@ -21,9 +21,9 @@ import org.geoserver.catalog.impl.LegendInfoImpl;
 import org.geoserver.catalog.impl.WMSLayerInfoImpl;
 import org.geoserver.wms.GetLegendGraphicRequest.LegendRequest;
 import org.geoserver.wms.legendgraphic.JSONLegendGraphicBuilder;
-import org.geotools.data.ows.HTTPClient;
-import org.geotools.data.ows.HTTPResponse;
 import org.geotools.data.ows.Response;
+import org.geotools.http.HTTPClient;
+import org.geotools.http.HTTPResponse;
 import org.geotools.ows.ServiceException;
 import org.geotools.ows.wms.request.AbstractGetLegendGraphicRequest;
 import org.geotools.ows.wms.response.GetLegendGraphicResponse;
@@ -88,8 +88,7 @@ public final class CascadedLegendRequest extends LegendRequest {
                     client.get(new URL(super.getLegendInfo().getOnlineResource()));
             try (InputStream is = jsonResponse.getResponseStream();
                     BufferedReader bufferedReader =
-                            new BufferedReader(
-                                    new InputStreamReader(is, Charset.forName("UTF-8")))) {
+                            new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 StringBuilder sb = new StringBuilder();
                 int cp;
                 while ((cp = bufferedReader.read()) != -1) {
@@ -115,10 +114,12 @@ public final class CascadedLegendRequest extends LegendRequest {
             setProperty(VERSION, version);
         }
 
+        @Override
         protected void initVersion() {
             setProperty(VERSION, "1.3.0");
         }
 
+        @Override
         public Response createResponse(HTTPResponse httpResponse)
                 throws ServiceException, IOException {
             return new GetLegendGraphicResponse(httpResponse);

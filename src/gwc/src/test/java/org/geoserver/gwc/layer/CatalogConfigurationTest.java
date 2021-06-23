@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -236,7 +237,7 @@ public class CatalogConfigurationTest {
 
         Set<GeoServerTileLayerInfo> expected =
                 ImmutableSet.of(layerInfo1, layerInfo2, groupInfo1, groupInfo2);
-        Set<GeoServerTileLayerInfo> actual = new HashSet<GeoServerTileLayerInfo>();
+        Set<GeoServerTileLayerInfo> actual = new HashSet<>();
 
         for (TileLayer layer : layers) {
             actual.add(((GeoServerTileLayer) layer).getInfo());
@@ -288,7 +289,7 @@ public class CatalogConfigurationTest {
         GeoServerTileLayerInfo newState = TileLayerInfoUtil.create(defaults);
         newState.setId(orig.getInfo().getId());
         newState.setName(orig.getInfo().getName());
-        assertFalse(orig.equals(newState));
+        assertNotEquals(orig, newState);
 
         final GeoServerTileLayer modified =
                 new GeoServerTileLayer(orig.getPublishedInfo(), gridSetBroker, newState);
@@ -344,9 +345,7 @@ public class CatalogConfigurationTest {
             assertTrue(true);
         }
 
-        String layerName;
-
-        layerName = tileLayerName(layer1);
+        String layerName = tileLayerName(layer1);
         assertNotNull(config.getLayer(layerName));
 
         final int initialCount = config.getLayerCount();
@@ -497,24 +496,16 @@ public class CatalogConfigurationTest {
         final int LOOPS = 1000;
         ExecutorService service = Executors.newFixedThreadPool(8);
         Runnable reloader =
-                new Runnable() {
-
-                    @Override
-                    public void run() {
-                        config.setGridSetBroker(gridSetBroker);
-                        config.afterPropertiesSet();
-                    }
+                () -> {
+                    config.setGridSetBroker(gridSetBroker);
+                    config.afterPropertiesSet();
                 };
         Runnable tileLayerFetcher =
-                new Runnable() {
-
-                    @Override
-                    public void run() {
-                        config.getLayer(layer1.getName());
-                        config.getLayer(layer2.getName());
-                        config.getLayer(group1.getName());
-                        config.getLayer(group2.getName());
-                    }
+                () -> {
+                    config.getLayer(layer1.getName());
+                    config.getLayer(layer2.getName());
+                    config.getLayer(group1.getName());
+                    config.getLayer(group2.getName());
                 };
         try {
             List<Future<?>> futures = new ArrayList<>();

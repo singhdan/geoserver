@@ -112,11 +112,9 @@ public class CatalogLayerEventListener implements CatalogListener {
      * applied to the {@link Catalog} at {@link #handlePostModifyEvent} and check whether it is
      * necessary to perform any action on the cache based on the changed properties
      */
-    private static ThreadLocal<CatalogModifyEvent> PRE_MODIFY_EVENT =
-            new ThreadLocal<CatalogModifyEvent>();
+    private static ThreadLocal<CatalogModifyEvent> PRE_MODIFY_EVENT = new ThreadLocal<>();
 
-    private static ThreadLocal<GeoServerTileLayerInfo> PRE_MODIFY_TILELAYER =
-            new ThreadLocal<GeoServerTileLayerInfo>();
+    private static ThreadLocal<GeoServerTileLayerInfo> PRE_MODIFY_TILELAYER = new ThreadLocal<>();
 
     public CatalogLayerEventListener(final GWC mediator, Catalog catalog) {
         this.mediator = mediator;
@@ -132,6 +130,7 @@ public class CatalogLayerEventListener implements CatalogListener {
      * @see #createTileLayer(LayerInfo)
      * @see #createTileLayer(LayerGroupInfo)
      */
+    @Override
     public void handleAddEvent(CatalogAddEvent event) throws CatalogException {
         GWCConfig config = mediator.getConfig();
         boolean sane = config.isSane();
@@ -191,6 +190,7 @@ public class CatalogLayerEventListener implements CatalogListener {
      *     org.geoserver.catalog.event.CatalogListener#handleModifyEvent(org.geoserver.catalog.event.CatalogModifyEvent)
      * @see #handlePostModifyEvent
      */
+    @Override
     public void handleModifyEvent(CatalogModifyEvent event) throws CatalogException {
         CatalogInfo source = event.getSource();
         if (source instanceof LayerInfo
@@ -224,6 +224,7 @@ public class CatalogLayerEventListener implements CatalogListener {
      * @see
      *     org.geoserver.catalog.event.CatalogListener#handlePostModifyEvent(org.geoserver.catalog.event.CatalogPostModifyEvent)
      */
+    @Override
     public void handlePostModifyEvent(final CatalogPostModifyEvent event) throws CatalogException {
         final CatalogInfo source = event.getSource();
         if (!(source instanceof LayerInfo
@@ -272,6 +273,13 @@ public class CatalogLayerEventListener implements CatalogListener {
                     || changedProperties.contains("namespace")
                     || changedProperties.contains("workspace")) {
                 handleRename(tileLayerInfo, source, changedProperties, oldValues, newValues);
+            }
+
+            GeoServerTileLayer tileLayer = mediator.getTileLayer(source);
+            if (tileLayer != null
+                    && (changedProperties.contains("nativeBoundingBox")
+                            || changedProperties.contains("bounds"))) {
+                tileLayer.boundsChanged();
             }
         } else if (source instanceof WorkspaceInfo) {
             if (changedProperties.contains("name")) {
@@ -382,7 +390,7 @@ public class CatalogLayerEventListener implements CatalogListener {
         }
 
         if (tileLayerInfo.isAutoCacheStyles()) {
-            Set<String> styles = new HashSet<String>();
+            Set<String> styles = new HashSet<>();
             for (StyleInfo s : li.getStyles()) {
                 styles.add(s.prefixedName());
             }
@@ -470,11 +478,10 @@ public class CatalogLayerEventListener implements CatalogListener {
         final String newWorkspaceName = (String) newValues.get(nameIndex);
 
         // handle layers rename
-        CloseableIterator<LayerInfo> layers =
+        try (CloseableIterator<LayerInfo> layers =
                 catalog.list(
                         LayerInfo.class,
-                        Predicates.equal("resource.store.workspace.name", newWorkspaceName));
-        try {
+                        Predicates.equal("resource.store.workspace.name", newWorkspaceName))) {
             while (layers.hasNext()) {
                 LayerInfo layer = layers.next();
                 String oldName = oldWorkspaceName + ":" + layer.getName();
@@ -508,7 +515,8 @@ public class CatalogLayerEventListener implements CatalogListener {
                             Level.FINE,
                             "Failed to determine if layer"
                                     + layer
-                                    + " is geometryless while renaming tile layers for workspace name change "
+                                    + " is geometryless while renaming tile layers for workspace "
+                                    + "name change "
                                     + oldName
                                     + " -> "
                                     + newName,
@@ -533,15 +541,13 @@ public class CatalogLayerEventListener implements CatalogListener {
                             e);
                 }
             }
-        } finally {
-            layers.close();
         }
 
         // handle layer group renames
-        CloseableIterator<LayerGroupInfo> groups =
+        try (CloseableIterator<LayerGroupInfo> groups =
                 catalog.list(
-                        LayerGroupInfo.class, Predicates.equal("workspace.name", newWorkspaceName));
-        try {
+                        LayerGroupInfo.class,
+                        Predicates.equal("workspace.name", newWorkspaceName))) {
             while (groups.hasNext()) {
                 LayerGroupInfo group = groups.next();
                 String oldName = oldWorkspaceName + ":" + group.getName();
@@ -578,8 +584,6 @@ public class CatalogLayerEventListener implements CatalogListener {
                             e);
                 }
             }
-        } finally {
-            groups.close();
         }
     }
 
@@ -650,6 +654,7 @@ public class CatalogLayerEventListener implements CatalogListener {
      *     org.geoserver.catalog.event.CatalogListener#handleRemoveEvent(org.geoserver.catalog.event.CatalogRemoveEvent)
      * @see GWC#removeTileLayers(List)
      */
+    @Override
     public void handleRemoveEvent(CatalogRemoveEvent event) throws CatalogException {
         CatalogInfo obj = event.getSource();
         if (!(obj instanceof LayerInfo || obj instanceof LayerGroupInfo)) {
@@ -676,6 +681,7 @@ public class CatalogLayerEventListener implements CatalogListener {
     }
 
     /** @see org.geoserver.catalog.event.CatalogListener#reloaded() */
+    @Override
     public void reloaded() {
         //
     }

@@ -16,6 +16,8 @@ drop table if exists collection;
 create table collection (
   "id" serial primary key,
   "name" varchar,
+  "title" varchar,
+  "description" varchar,
   "primary" boolean,
   "htmlDescription" text,
   "footprint" geometry(Polygon, 4326),
@@ -27,7 +29,7 @@ create table collection (
   "eoProductType" varchar,
   "eoPlatform" varchar,
   "eoPlatformSerialIdentifier" varchar,
-  "eoInstrument" varchar,
+  "eoInstrument" varchar[],
   "eoSensorType" varchar, -- this is configurable, so no checks on values anymore
   "eoCompositeType" varchar,
   "eoProcessingLevel" varchar,
@@ -36,7 +38,10 @@ create table collection (
   "eoWavelength" int,
   "eoSecurityConstraints" boolean,
   "eoDissemination" varchar,
-  "eoAcquisitionStation" varchar
+  "eoAcquisitionStation" varchar,
+  "license" varchar,
+  "enabled" boolean not null DEFAULT true,
+  "assets" json
 );
 -- index all (really, this is a search engine)
 -- manually generated indexes
@@ -101,6 +106,7 @@ create table product (
   "eoTrack" int,
   "eoFrame" int,
   "eoSwathIdentifier" text,
+  "eoProductPlatform" varchar,
   "optCloudCover" int check ("optCloudCover" between 0 and 100),
   "optSnowCover" int check ("optSnowCover" between 0 and 100),
   "eoProductQualityStatus" varchar check ("eoProductQualityStatus" in ('NOMINAL', 'DEGRADED')),
@@ -135,7 +141,9 @@ create table product (
   "atmSpeciesError" float[],
   "atmUnit" varchar[],
   "atmAlgorithmName" varchar[],
-  "atmAlgorithmVersion" varchar[]
+  "atmAlgorithmVersion" varchar[],
+  "enabled" boolean not null DEFAULT true,
+  "assets" json
 );
 
 -- index all (really, this is a search engine)
@@ -146,6 +154,7 @@ create index "idx_product_footprint" on product using GIST("footprint");
  CREATE INDEX "idx_product_timeStart" ON product ("timeStart");
  CREATE INDEX "idx_product_timeEnd" ON product ("timeEnd");
  CREATE INDEX "idx_product_eoParentIdentifier" ON product ("eoParentIdentifier");
+ CREATE INDEX "idx_product_eoParentIdentifier_timeEnd_timeStart" ON product("eoParentIdentifier","timeEnd","timeStart");
  CREATE INDEX "idx_product_eoProductionStatus" ON product ("eoProductionStatus");
  CREATE INDEX "idx_product_eoAcquisitionType" ON product ("eoAcquisitionType");
  CREATE INDEX "idx_product_eoOrbitNumber" ON product ("eoOrbitNumber");
@@ -187,7 +196,8 @@ create index "idx_product_footprint" on product using GIST("footprint");
  CREATE INDEX "idx_product_atmSpeciesError" on product using GIN("atmSpeciesError");
  CREATE INDEX "idx_product_atmAlgorithmName" on product using GIN("atmAlgorithmName");
  CREATE INDEX "idx_product_atmAlgorithmVersion" on product using GIN("atmAlgorithmVersion");
- 
+ -- extra attribute to support heterogeneous CRS mosaic queries
+ CREATE INDEX "idx_product_crs" ON product ("crs");
 
  -- the eo metadata storage (large files, not used for search, thus separate table)
 create table product_metadata (

@@ -19,7 +19,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
     public static final int DEFAULT_REMOTE_STYLE_MAX_REQUEST_TIME = 60000;
     public static final int DEFAULT_REMOTE_STYLE_TIMEOUT = 30000;
 
-    List<String> srs = new ArrayList<String>();
+    List<String> srs = new ArrayList<>();
 
     Boolean bboxForEachCRS;
 
@@ -28,10 +28,10 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
     WMSInterpolation interpolation = WMSInterpolation.Nearest;
 
     boolean getFeatureInfoMimeTypeCheckingEnabled;
-    Set<String> getFeatureInfoMimeTypes = new HashSet<String>();
+    Set<String> getFeatureInfoMimeTypes = new HashSet<>();
 
     boolean getMapMimeTypeCheckingEnabled;
-    Set<String> getMapMimeTypes = new HashSet<String>();
+    Set<String> getMapMimeTypes = new HashSet<>();
 
     boolean dynamicStylingDisabled;
 
@@ -44,7 +44,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
      *
      * @since 2.1.3
      */
-    protected List<AuthorityURLInfo> authorityURLs = new ArrayList<AuthorityURLInfo>(2);
+    protected List<AuthorityURLInfo> authorityURLs = new ArrayList<>(2);
 
     /**
      * This property is transient in 2.1.x series and stored under the metadata map with key
@@ -52,7 +52,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
      *
      * @since 2.1.3
      */
-    protected List<LayerIdentifierInfo> identifiers = new ArrayList<LayerIdentifierInfo>(2);
+    protected List<LayerIdentifierInfo> identifiers = new ArrayList<>(2);
 
     int maxBuffer;
 
@@ -73,35 +73,44 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
     private Integer remoteStyleMaxRequestTime;
     private Integer remoteStyleTimeout;
 
+    private Boolean defaultGroupStyleEnabled;
+
     public WMSInfoImpl() {
-        authorityURLs = new ArrayList<AuthorityURLInfo>(2);
-        identifiers = new ArrayList<LayerIdentifierInfo>(2);
+        authorityURLs = new ArrayList<>(2);
+        identifiers = new ArrayList<>(2);
     }
 
+    @Override
     public int getMaxRequestMemory() {
         return maxRequestMemory;
     }
 
+    @Override
     public void setMaxRequestMemory(int maxRequestMemory) {
         this.maxRequestMemory = maxRequestMemory;
     }
 
+    @Override
     public WatermarkInfo getWatermark() {
         return watermark;
     }
 
+    @Override
     public void setWatermark(WatermarkInfo watermark) {
         this.watermark = watermark;
     }
 
+    @Override
     public void setInterpolation(WMSInterpolation interpolation) {
         this.interpolation = interpolation;
     }
 
+    @Override
     public WMSInterpolation getInterpolation() {
         return interpolation;
     }
 
+    @Override
     public List<String> getSRS() {
         return srs;
     }
@@ -110,6 +119,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         this.srs = srs;
     }
 
+    @Override
     public Boolean isBBOXForEachCRS() {
         if (bboxForEachCRS != null) {
             return bboxForEachCRS;
@@ -120,30 +130,37 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         return bool != null && bool;
     }
 
+    @Override
     public void setBBOXForEachCRS(Boolean bboxForEachCRS) {
         this.bboxForEachCRS = bboxForEachCRS;
     }
 
+    @Override
     public int getMaxBuffer() {
         return maxBuffer;
     }
 
+    @Override
     public void setMaxBuffer(int maxBuffer) {
         this.maxBuffer = maxBuffer;
     }
 
+    @Override
     public int getMaxRenderingTime() {
         return maxRenderingTime;
     }
 
+    @Override
     public void setMaxRenderingTime(int maxRenderingTime) {
         this.maxRenderingTime = maxRenderingTime;
     }
 
+    @Override
     public int getMaxRenderingErrors() {
         return maxRenderingErrors;
     }
 
+    @Override
     public void setMaxRenderingErrors(int maxRenderingErrors) {
         this.maxRenderingErrors = maxRenderingErrors;
     }
@@ -166,6 +183,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         this.identifiers = identifiers;
     }
 
+    @Override
     public Set<String> getGetFeatureInfoMimeTypes() {
         return getFeatureInfoMimeTypes;
     }
@@ -174,6 +192,7 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         this.getFeatureInfoMimeTypes = getFeatureInfoMimeTypes;
     }
 
+    @Override
     public Set<String> getGetMapMimeTypes() {
         return getMapMimeTypes;
     }
@@ -182,35 +201,43 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         this.getMapMimeTypes = getMapMimeTypes;
     }
 
+    @Override
     public boolean isGetFeatureInfoMimeTypeCheckingEnabled() {
         return getFeatureInfoMimeTypeCheckingEnabled;
     }
 
+    @Override
     public void setGetFeatureInfoMimeTypeCheckingEnabled(
             boolean getFeatureInfoMimeTypeCheckingEnabled) {
         this.getFeatureInfoMimeTypeCheckingEnabled = getFeatureInfoMimeTypeCheckingEnabled;
     }
 
+    @Override
     public boolean isGetMapMimeTypeCheckingEnabled() {
         return getMapMimeTypeCheckingEnabled;
     }
 
+    @Override
     public void setGetMapMimeTypeCheckingEnabled(boolean getMapMimeTypeCheckingEnabled) {
         this.getMapMimeTypeCheckingEnabled = getMapMimeTypeCheckingEnabled;
     }
 
+    @Override
     public String getRootLayerTitle() {
         return rootLayerTitle;
     }
 
+    @Override
     public void setRootLayerTitle(String rootLayerTitle) {
         this.rootLayerTitle = rootLayerTitle;
     }
 
+    @Override
     public String getRootLayerAbstract() {
         return rootLayerAbstract;
     }
 
+    @Override
     public void setRootLayerAbstract(String rootLayerAbstract) {
         this.rootLayerAbstract = rootLayerAbstract;
     }
@@ -237,12 +264,14 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
         this.featuresReprojectionDisabled = featuresReprojectionDisabled;
     }
 
+    @Override
     public int getMaxRequestedDimensionValues() {
         return maxRequestedDimensionValues == null
                 ? DimensionInfo.DEFAULT_MAX_REQUESTED_DIMENSION_VALUES
                 : maxRequestedDimensionValues;
     }
 
+    @Override
     public void setMaxRequestedDimensionValues(int maxRequestedDimensionValues) {
         this.maxRequestedDimensionValues = maxRequestedDimensionValues;
     }
@@ -280,5 +309,16 @@ public class WMSInfoImpl extends ServiceInfoImpl implements WMSInfo {
     @Override
     public void setRemoteStyleTimeout(int remoteStyleTimeout) {
         this.remoteStyleTimeout = remoteStyleTimeout;
+    }
+
+    @Override
+    public boolean isDefaultGroupStyleEnabled() {
+        if (defaultGroupStyleEnabled == null) return true;
+        return defaultGroupStyleEnabled.booleanValue();
+    }
+
+    @Override
+    public void setDefaultGroupStyleEnabled(boolean defaultGroupStyleEnabled) {
+        this.defaultGroupStyleEnabled = defaultGroupStyleEnabled;
     }
 }

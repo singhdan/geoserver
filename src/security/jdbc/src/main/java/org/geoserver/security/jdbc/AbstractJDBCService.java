@@ -171,8 +171,6 @@ public abstract class AbstractJDBCService extends AbstractGeoServerSecurityServi
         Connection con = null;
         PreparedStatement ps = null;
         try {
-            con = datasource.getConnection();
-            if (con.getAutoCommit() == true) con.setAutoCommit(false);
             con = getConnection();
             for (String stmt : getOrderedNamesForCreate()) {
                 ps = getDDLStatement(stmt, con);
@@ -257,9 +255,8 @@ public abstract class AbstractJDBCService extends AbstractGeoServerSecurityServi
 
     /** Checks if the tables are already created */
     public boolean tablesAlreadyCreated() throws IOException {
-        ResultSet rs = null;
         Connection con = null;
-        try {
+        try { // NOPMD - connection closing must be delegated to the closeConnection method
             con = getConnection();
             DatabaseMetaData md = con.getMetaData();
             String schemaName = null;
@@ -270,30 +267,29 @@ public abstract class AbstractJDBCService extends AbstractGeoServerSecurityServi
                 tableName = tok.nextToken();
             }
             // try exact match
-            rs = md.getTables(null, schemaName, tableName, null);
-            if (rs.next()) return true;
+            try (ResultSet rs = md.getTables(null, schemaName, tableName, null)) {
+                if (rs.next()) return true;
+            }
 
             // try with upper case letters
-            rs.close();
             schemaName = schemaName == null ? null : schemaName.toUpperCase();
             tableName = tableName.toUpperCase();
-            rs = md.getTables(null, schemaName, tableName, null);
-            if (rs.next()) return true;
+            try (ResultSet rs = md.getTables(null, schemaName, tableName, null)) {
+                if (rs.next()) return true;
+            }
 
             // try with lower case letters
-            rs.close();
             schemaName = schemaName == null ? null : schemaName.toLowerCase();
             tableName = tableName.toLowerCase();
-            rs = md.getTables(null, schemaName, tableName, null);
-            if (rs.next()) return true;
+            try (ResultSet rs = md.getTables(null, schemaName, tableName, null)) {
+                if (rs.next()) return true;
+            }
 
             return false;
-
         } catch (SQLException ex) {
             throw new IOException(ex);
         } finally {
             try {
-                if (rs != null) rs.close();
                 if (con != null) closeConnection(con);
             } catch (SQLException e) {
                 // do nothing
@@ -310,7 +306,7 @@ public abstract class AbstractJDBCService extends AbstractGeoServerSecurityServi
      */
     protected Map<String, SQLException> checkSQLStatements(Properties props) throws IOException {
 
-        Map<String, SQLException> reportMap = new HashMap<String, SQLException>();
+        Map<String, SQLException> reportMap = new HashMap<>();
         Connection con = null;
         try {
             con = getConnection();

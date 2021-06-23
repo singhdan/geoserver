@@ -10,7 +10,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.TreeSet;
@@ -20,20 +19,12 @@ import org.geoserver.catalog.DimensionDefaultValueSetting.Strategy;
 import org.geoserver.catalog.DimensionInfo;
 import org.geoserver.catalog.DimensionPresentation;
 import org.geoserver.catalog.ResourceInfo;
-import org.geoserver.config.GeoServer;
 import org.geoserver.ows.kvp.TimeParser;
-import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.util.NearestMatchFinder;
-import org.geoserver.wms.GetMap;
-import org.geoserver.wms.GetMapCallback;
-import org.geoserver.wms.GetMapCallbackAdapter;
 import org.geoserver.wms.WMS;
 import org.geoserver.wms.WMSDimensionsTestSupport;
-import org.geoserver.wms.WMSInfo;
-import org.geoserver.wms.WMSMapContent;
 import org.geotools.gce.imagemosaic.ImageMosaicFormat;
 import org.junit.Test;
-import org.springframework.mock.web.MockHttpServletResponse;
 
 public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
 
@@ -328,7 +319,6 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         BufferedImage image = getAsImage(BASE_PNG_URL + "&time=2009-10-31", "image/png");
         assertNearestTimeWarning(getLayerId(WATTEMP), "2008-11-01T00:00:00.000Z");
 
-        // same as testTimeAnimation, November
         assertPixel(image, 36, 31, new Color(246, 246, 255));
         assertPixel(image, 68, 72, new Color(255, 187, 187));
     }
@@ -341,118 +331,6 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         } finally {
             NearestMatchFinder.ENABLE_STRUCTURED_READER_SUPPORT = true;
         }
-    }
-
-    @Test
-    public void testTimeAnimation() throws Exception {
-        setupRasterDimension(
-                WATTEMP,
-                ResourceInfo.ELEVATION,
-                DimensionPresentation.LIST,
-                null,
-                UNITS,
-                UNIT_SYMBOL);
-        setupRasterDimension(
-                WATTEMP, ResourceInfo.TIME, DimensionPresentation.LIST, null, null, null);
-
-        List<BufferedImage> images =
-                getAsAnimation(
-                        BASE_URL + "&time=2008-10-01/2008-11-31&format=image/gif;subtype=animated",
-                        "image/gif");
-        assertEquals(2, images.size());
-        BufferedImage imageOctober = images.get(0);
-        BufferedImage imageNovember = images.get(1);
-
-        // this should be the same as "testTime"
-        assertPixel(imageOctober, 36, 31, new Color(246, 246, 255));
-        assertPixel(imageOctober, 68, 72, new Color(255, 181, 181));
-
-        // this should be the same as testDefault
-        assertPixel(imageNovember, 36, 31, new Color(246, 246, 255));
-        assertPixel(imageNovember, 68, 72, new Color(255, 187, 187));
-    }
-
-    @Test
-    public void testTimeAnimationTimeout() throws Exception {
-        setupRasterDimension(
-                WATTEMP,
-                ResourceInfo.ELEVATION,
-                DimensionPresentation.LIST,
-                null,
-                UNITS,
-                UNIT_SYMBOL);
-        setupRasterDimension(
-                WATTEMP, ResourceInfo.TIME, DimensionPresentation.LIST, null, null, null);
-
-        // setup a short timeout
-        final int TIMEOUT_MS = 10;
-        final GeoServer gs = getGeoServer();
-        WMSInfo wms = gs.getService(WMSInfo.class);
-        wms.getMetadata().put(WMS.MAX_RENDERING_TIME, String.valueOf(TIMEOUT_MS));
-        gs.save(wms);
-
-        // make extra sure we are going to take more than that
-        GetMap getMap = GeoServerExtensions.bean(GetMap.class);
-        List<GetMapCallback> originalCallbacks =
-                GeoServerExtensions.extensions(GetMapCallback.class);
-
-        GetMapCallback timeoutCallback =
-                new GetMapCallbackAdapter() {
-                    @Override
-                    public WMSMapContent beforeRender(WMSMapContent mapContent) {
-
-                        try {
-                            Thread.sleep(TIMEOUT_MS * 2);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return super.beforeRender(mapContent);
-                    }
-                };
-        try {
-            getMap.setGetMapCallbacks(Arrays.asList(timeoutCallback));
-
-            // run the request that will time out
-            MockHttpServletResponse resp =
-                    getAsServletResponse(
-                            BASE_URL
-                                    + "&time=2008-10-01/2008-11-31&format=image/gif;subtype=animated");
-            assertEquals("application/vnd.ogc.se_xml", resp.getContentType());
-            assertTrue(resp.getContentAsString().contains("This animation request used more time"));
-        } finally {
-            wms.getMetadata().remove(WMS.MAX_RENDERING_TIME);
-            gs.save(wms);
-            getMap.setGetMapCallbacks(originalCallbacks);
-        }
-    }
-
-    @Test
-    public void testElevationAnimation() throws Exception {
-        setupRasterDimension(
-                WATTEMP,
-                ResourceInfo.ELEVATION,
-                DimensionPresentation.LIST,
-                null,
-                UNITS,
-                UNIT_SYMBOL);
-        setupRasterDimension(
-                WATTEMP, ResourceInfo.TIME, DimensionPresentation.LIST, null, null, null);
-
-        List<BufferedImage> images =
-                getAsAnimation(
-                        BASE_URL + "&elevation=-100/500&format=image/gif;subtype=animated",
-                        "image/gif");
-        assertEquals(2, images.size());
-        BufferedImage image0 = images.get(0);
-        BufferedImage image100 = images.get(1);
-
-        // this should be the same as "testElevatin"
-        assertPixel(image100, 36, 31, new Color(255, 255, 255)); // nodata -> bgcolor
-        assertPixel(image100, 68, 72, new Color(246, 246, 255));
-
-        // this should be the same as testDefault
-        assertPixel(image0, 36, 31, new Color(246, 246, 255));
-        assertPixel(image0, 68, 72, new Color(255, 187, 187));
     }
 
     @Test
@@ -568,23 +446,26 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         setupNearestMatch(TIMERANGES, ResourceInfo.TIME, true);
 
         // Setting a BLUE Background Color
+        String timeRangesId = getLayerId(TIMERANGES);
         String baseUrl =
                 "wms?LAYERS="
-                        + getLayerId(TIMERANGES)
+                        + timeRangesId
                         + "&STYLES=temperature&FORMAT=image%2Fpng&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG:4326"
                         + "&BBOX=-0.89131513678082,40.246933882167,15.721292974683,44.873229811941&WIDTH=200&HEIGHT=80&bgcolor=0x0000FF";
 
         // after last range, as a range
         BufferedImage image = getAsImage(baseUrl + "&TIME=2018-11-8/2018-11-09", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-07T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-07T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(249, 249, 255));
 
         // after last range, as an instant
         image = getAsImage(baseUrl + "&TIME=20018-11-05", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-07T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-07T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(249, 249, 255));
 
@@ -593,28 +474,31 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
                 getAsImage(
                         baseUrl + "&TIME=2008-11-04T12:00:00.000Z/2008-11-04T16:00:00.000Z",
                         "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-05T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-05T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(249, 249, 255));
 
         // in the middle hole, but closer to the latest value, as an instant
         image = getAsImage(baseUrl + "&TIME=2008-11-04T16:00:00.000Z", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-05T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-05T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(249, 249, 255));
 
         // before first range, as a range
         image = getAsImage(baseUrl + "&TIME=2000-10-31/2000-10-31", "image/png");
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-10-31T00:00:00.000Z");
+        assertNearestTimeWarning(timeRangesId, "2008-10-31T00:00:00.000Z");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(255, 172, 172));
 
         // before first range, as an instant
         image = getAsImage(baseUrl + "&TIME=2000-10-31", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-10-31T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-10-31T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
         assertPixel(image, 36, 31, Color.BLUE);
         assertPixel(image, 68, 72, new Color(255, 172, 172));
     }
@@ -650,57 +534,66 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         setupRasterDimension(TIMERANGES, "date", DimensionPresentation.LIST, null, null, null);
 
         // Setting a BLUE Background Color
+        String timeRangesId = getLayerId(TIMERANGES);
         String baseUrl =
                 "wms?LAYERS="
-                        + getLayerId(TIMERANGES)
+                        + timeRangesId
                         + "&STYLES=temperature&FORMAT=image%2Fpng&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG:4326"
                         + "&BBOX=-0.89131513678082,40.246933882167,15.721292974683,44.873229811941&WIDTH=200&HEIGHT=80&bgcolor=0x0000FF";
 
         // after last range, as a range, large enough acceptable range to find it
         setupNearestMatch(TIMERANGES, ResourceInfo.TIME, true, "P100Y");
         getAsImage(baseUrl + "&TIME=2018-11-8/2018-11-09", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-07T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-07T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // same as above but with an instant
         getAsImage(baseUrl + "&TIME=2018-11-05", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-07T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-07T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // after last range, as a range, small enough that it won't be found
         setupNearestMatch(TIMERANGES, ResourceInfo.TIME, true, "P1D");
         getAsImage(baseUrl + "&TIME=2018-11-8/2018-11-09", "image/png");
-        assertWarningCount(1);
-        assertNoNearestWarning(getLayerId(TIMERANGES), ResourceInfo.TIME);
+        assertWarningCount(2);
+        assertNoNearestWarning(timeRangesId, ResourceInfo.TIME);
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // same as above, but with an instant
         getAsImage(baseUrl + "&TIME=20018-11-05", "image/png");
-        assertWarningCount(1);
-        assertNoNearestWarning(getLayerId(TIMERANGES), ResourceInfo.TIME);
+        assertWarningCount(2);
+        assertNoNearestWarning(timeRangesId, ResourceInfo.TIME);
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // in the middle hole, closer to the latest value, but with a search radius that will match
         // the earlier one
         setupNearestMatch(TIMERANGES, ResourceInfo.TIME, true, "P1D/P0D");
         getAsImage(
                 baseUrl + "&TIME=2008-11-04T12:00:00.000Z/2008-11-04T16:00:00.000Z", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-04T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-04T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // same as above, but with an instant
         getAsImage(baseUrl + "&TIME=2008-11-04T16:00:00.000Z", "image/png");
-        assertWarningCount(1);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-04T00:00:00.000Z");
+        assertWarningCount(2);
+        assertNearestTimeWarning(timeRangesId, "2008-11-04T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // before first range, as a range, with a range that won't allow match
         setupNearestMatch(TIMERANGES, ResourceInfo.TIME, true, "P1D");
         getAsImage(baseUrl + "&TIME=2000-10-31/2000-10-31", "image/png");
-        assertWarningCount(1);
-        assertNoNearestWarning(getLayerId(TIMERANGES), ResourceInfo.TIME);
+        assertWarningCount(2);
+        assertNoNearestWarning(timeRangesId, ResourceInfo.TIME);
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
 
         // same as above, as an instant
         getAsImage(baseUrl + "&TIME=2000-10-31", "image/png");
-        assertWarningCount(1);
-        assertNoNearestWarning(getLayerId(TIMERANGES), ResourceInfo.TIME);
+        assertWarningCount(2);
+        assertNoNearestWarning(timeRangesId, ResourceInfo.TIME);
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
     }
 
     @Test
@@ -821,26 +714,32 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         setupNearestMatch(WATTEMP, ResourceInfo.TIME, true);
 
         // Setting a BLUE Background Color
+        String timeRangesId = getLayerId(TIMERANGES);
+        String waterTempId = getLayerId(WATTEMP);
         String baseUrl =
                 "wms?LAYERS="
-                        + getLayerId(TIMERANGES)
+                        + timeRangesId
                         + ","
-                        + getLayerId(WATTEMP)
+                        + waterTempId
                         + "&STYLES=,&FORMAT=image%2Fpng"
                         + "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&SRS=EPSG:4326"
                         + "&BBOX=-180,-90,180,90&WIDTH=200&HEIGHT=80&bgcolor=0x0000FF";
 
         // before both
         getAsImage(baseUrl + "&TIME=2000-01-01", "image/png");
-        assertWarningCount(2);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-10-31T00:00:00.000Z");
-        assertNearestTimeWarning(getLayerId(WATTEMP), "2008-10-31T00:00:00.000Z");
+        assertWarningCount(4);
+        assertNearestTimeWarning(timeRangesId, "2008-10-31T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
+        assertNearestTimeWarning(waterTempId, "2008-10-31T00:00:00.000Z");
+        assertDefaultDimensionWarning(waterTempId, ResourceInfo.ELEVATION, UNITS, "0.0");
 
         // after both
         getAsImage(baseUrl + "&TIME=2100-01-01", "image/png");
-        assertWarningCount(2);
-        assertNearestTimeWarning(getLayerId(TIMERANGES), "2008-11-07T00:00:00.000Z");
-        assertNearestTimeWarning(getLayerId(WATTEMP), "2008-11-01T00:00:00.000Z");
+        assertWarningCount(4);
+        assertNearestTimeWarning(timeRangesId, "2008-11-07T00:00:00.000Z");
+        assertDefaultDimensionWarning(timeRangesId, ResourceInfo.ELEVATION, UNITS, "20.0");
+        assertNearestTimeWarning(waterTempId, "2008-11-01T00:00:00.000Z");
+        assertDefaultDimensionWarning(waterTempId, ResourceInfo.ELEVATION, UNITS, "0.0");
     }
 
     @Test
@@ -855,11 +754,13 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         getCatalog().save(info);
 
         TimeParser parser = new TimeParser();
+        @SuppressWarnings("unchecked")
         List<Object> queryRanges = (List<Object>) parser.parse("2014-01-01/2019-01-01/P1Y");
         // 1Y Period is 365.25 days so the parsing will result in days not aligned to 1st of January
         // at 00:00:00
 
         // Add a duplicate
+        @SuppressWarnings("unchecked")
         Date duplicate = (Date) ((List<Object>) parser.parse("2014-01-01T00:00:00.000Z")).get(0);
         queryRanges.add(duplicate);
         assertEquals(7, queryRanges.size());
@@ -868,7 +769,9 @@ public class DimensionsRasterGetMapTest extends WMSDimensionsTestSupport {
         TreeSet<Date> times = wms.queryCoverageNearestMatchTimes(info, queryRanges);
         assertEquals(6, times.size());
         for (int i = 2014; i < 2020; i++) {
-            Date date = (Date) ((List<Object>) parser.parse(i + "-01-01T00:00:00.000Z")).get(0);
+            @SuppressWarnings("unchecked")
+            List<Object> list = (List<Object>) parser.parse(i + "-01-01T00:00:00.000Z");
+            Date date = (Date) list.get(0);
             assertTrue(times.contains(date));
         }
     }

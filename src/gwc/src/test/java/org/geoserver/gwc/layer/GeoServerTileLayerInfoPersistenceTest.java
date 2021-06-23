@@ -35,7 +35,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.web.context.WebApplicationContext;
 
 public class GeoServerTileLayerInfoPersistenceTest {
 
@@ -78,9 +77,7 @@ public class GeoServerTileLayerInfoPersistenceTest {
 
     private GeoServerTileLayerInfo testMarshaling(GeoServerTileLayerInfo info) throws Exception {
 
-        XStream xstream =
-                XMLConfiguration.getConfiguredXStream(
-                        new SecureXStream(), (WebApplicationContext) null);
+        XStream xstream = XMLConfiguration.getConfiguredXStream(new SecureXStream(), null);
         xstream = new GWCGeoServerConfigurationProvider().getConfiguredXStream(xstream);
         xstream.allowTypes(new Class[] {GeoServerTileLayerInfo.class, SortedSet.class});
 
@@ -99,6 +96,7 @@ public class GeoServerTileLayerInfoPersistenceTest {
         assertThat(unmarshalled, sameProperty(info, "gridSubsets"));
         assertThat(unmarshalled, sameProperty(info, "mimeFormats"));
         assertThat(unmarshalled, sameProperty(info, "parameterFilters"));
+        assertThat(unmarshalled, sameProperty(info, "cacheWarningSkips"));
         assertThat(unmarshalled, equalTo(info));
 
         assertThat("cachedStyles", unmarshalled.cachedStyles(), equalTo(info.cachedStyles()));
@@ -126,9 +124,8 @@ public class GeoServerTileLayerInfoPersistenceTest {
 
     @Test
     public void testMarshallingGridSubsets() throws Exception {
-        List<XMLGridSubset> subsets = new ArrayList<XMLGridSubset>();
-        XMLGridSubset subset;
-        subset = new XMLGridSubset();
+        List<XMLGridSubset> subsets = new ArrayList<>();
+        XMLGridSubset subset = new XMLGridSubset();
         subset.setGridSetName("EPSG:4326");
         subset.setZoomStart(1);
         subset.setZoomStop(10);

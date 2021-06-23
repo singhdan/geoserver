@@ -32,6 +32,7 @@ public class LoggingFilter implements Filter {
     protected boolean logBodies = true;
     protected boolean logHeaders = true;
 
+    @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
             throws IOException, ServletException {
         String message = "";
@@ -102,6 +103,7 @@ public class LoggingFilter implements Filter {
         }
     }
 
+    @Override
     public void init(FilterConfig filterConfig) {
         enabled = getConfigBool("enabled", filterConfig);
         logBodies = getConfigBool("log-request-bodies", filterConfig);
@@ -111,7 +113,7 @@ public class LoggingFilter implements Filter {
     protected boolean getConfigBool(String name, FilterConfig conf) {
         try {
             String value = conf.getInitParameter(name);
-            return Boolean.valueOf(value).booleanValue();
+            return Boolean.parseBoolean(value);
         } catch (Exception e) {
             return false;
         }
@@ -122,6 +124,7 @@ public class LoggingFilter implements Filter {
         return s;
     }
 
+    @Override
     public void destroy() {}
 
     /** @return the enabled */

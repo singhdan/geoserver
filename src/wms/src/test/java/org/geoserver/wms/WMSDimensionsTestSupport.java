@@ -79,7 +79,7 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
     @Override
     protected void setUpTestData(SystemTestData testData) throws Exception {
         super.setUpTestData(testData);
-        Map<String, String> namespaces = new HashMap<String, String>();
+        Map<String, String> namespaces = new HashMap<>();
         namespaces.put("xlink", "http://www.w3.org/1999/xlink");
         namespaces.put("wfs", "http://www.opengis.net/wfs");
         namespaces.put("wcs", "http://www.opengis.net/wcs/1.1.1");
@@ -106,8 +106,8 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
         getGeoServer().save(wms);
 
         // vector time-elevation
-        Map map = new HashMap();
-        map.put(MockData.KEY_STYLE, "TimeElevation");
+        Map<LayerProperty, Object> map = new HashMap<>();
+        map.put(LayerProperty.STYLE, "TimeElevation");
         Catalog catalog = getCatalog();
         testData.addStyle(
                 "TimeElevation", "TimeElevation.sld", WMSDimensionsTestSupport.class, catalog);
@@ -127,7 +127,7 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
                 catalog);
 
         // vector time-elevation, stacked (all polys covering the whole planet)
-        map.put(MockData.KEY_STYLE, "TimeElevationStacked");
+        map.put(LayerProperty.STYLE, "TimeElevationStacked");
         testData.addStyle(
                 "TimeElevationStacked",
                 "TimeElevationStacked.sld",
@@ -142,7 +142,7 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
 
         testData.addStyle(
                 "temperature", "temperature.sld", WMSDimensionsTestSupport.class, catalog);
-        Map propertyMap = new HashMap();
+        Map<LayerProperty, Object> propertyMap = new HashMap<>();
         propertyMap.put(LayerProperty.STYLE, "temperature");
         // a raster layer with times
         testData.addRasterLayer(
@@ -201,7 +201,29 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
         List<Object> values = response.getHeaderValues(HttpHeaders.WARNING);
         assertNotNull(values);
         assertEquals(
-                "Expected to find a different number of warnings", expectedValue, values.size());
+                "Expected to find a different number of warnings, actual warnings are: " + values,
+                expectedValue,
+                values.size());
+    }
+
+    /**
+     * Asserts that the specified nearest value has been used and check the corresponding HTTP
+     * warning
+     */
+    protected void assertDefaultDimensionWarning(
+            String layerId, String dimensionName, String unit, String expectedValue) {
+        String expected =
+                "99 Default value used: "
+                        + dimensionName
+                        + "="
+                        + expectedValue
+                        + " "
+                        + unit
+                        + " ("
+                        + layerId
+                        + ")";
+
+        assertWarningExists(expected);
     }
 
     /**
@@ -218,13 +240,7 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
                         + layerId
                         + ")";
 
-        MockHttpServletResponse response = getLastResponse();
-        List<Object> values = response.getHeaderValues(HttpHeaders.WARNING);
-        Object found = values.stream().filter(v -> expected.equals(v)).findFirst().orElse(null);
-
-        assertNotNull(
-                "Could not find\n" + expected + "\n among the following warnings:\n" + values,
-                found);
+        assertWarningExists(expected);
     }
 
     /**
@@ -234,6 +250,10 @@ public abstract class WMSDimensionsTestSupport extends WMSTestSupport {
     protected void assertNoNearestWarning(String layerId, String dimension) {
         String expected = "99 No nearest value found on " + layerId + ": " + dimension;
 
+        assertWarningExists(expected);
+    }
+
+    private void assertWarningExists(String expected) {
         MockHttpServletResponse response = getLastResponse();
         List<Object> values = response.getHeaderValues(HttpHeaders.WARNING);
         Object found = values.stream().filter(v -> expected.equals(v)).findFirst().orElse(null);

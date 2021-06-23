@@ -38,13 +38,14 @@ import org.springframework.web.bind.annotation.RestController;
         MediaType.TEXT_HTML_VALUE
     }
 )
-public class WMSSettingsController extends ServiceSettingsController {
+public class WMSSettingsController extends ServiceSettingsController<WMSInfo> {
 
     @Autowired
     public WMSSettingsController(GeoServer geoServer) {
         super(geoServer, WMSInfo.class);
     }
 
+    @Override
     @PutMapping(
         value = {"/settings", "/workspaces/{workspaceName}/settings"},
         consumes = {

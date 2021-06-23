@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -338,7 +339,9 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
 
     @Test
     public void testPostExternalEntityAsSLD() throws Exception {
-        String xml = IOUtils.toString(TestData.class.getResource("externalEntities.sld"), "UTF-8");
+        String xml =
+                IOUtils.toString(
+                        TestData.class.getResource("externalEntities.sld"), StandardCharsets.UTF_8);
 
         MockHttpServletResponse response =
                 postAsServletResponse(
@@ -496,6 +499,7 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         JSONObject styleJson = ((JSONObject) json).getJSONObject("style");
         assertEquals("Ponds", styleJson.get("name"));
         assertEquals("Ponds.sld", styleJson.get("filename"));
+        @SuppressWarnings("unchecked")
         Collection<JSONObject> entryCollection =
                 JSONArray.toCollection(
                         styleJson.getJSONObject("metadata").getJSONArray("entry"),
@@ -538,7 +542,7 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         assertEquals("Forests.sld", style.getFilename());
         MetadataMap metadata = style.getMetadata();
         assertNotNull(metadata);
-        assertTrue(metadata.size() == 1);
+        assertEquals(1, metadata.size());
         assertEquals("300", metadata.get("cacheAgeMax"));
         assertNotNull(style.getDateModified());
     }
@@ -568,7 +572,7 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         assertEquals("Ponds.sld", style.getFilename());
         MetadataMap metadata = style.getMetadata();
         assertNotNull(metadata);
-        assertTrue(metadata.size() == 2);
+        assertEquals(2, metadata.size());
         assertEquals("300", metadata.get("cacheAgeMax"));
         assertEquals("test1", metadata.get("surename"));
         assertNotNull(style.getDateModified());
@@ -1069,6 +1073,7 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
 
     @Test
     @Ignore
+    @SuppressWarnings("PMD.CloseResource")
     public void testPostAsPSL() throws Exception {
         Properties props = new Properties();
         props.put("type", "point");
@@ -1091,28 +1096,22 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         assertNotNull(catalog.getStyleByName("foo").getDateCreated());
 
         Resource style = getDataDirectory().style(getCatalog().getStyleByName("foo"));
-        InputStream in = style.in();
-
         props = new Properties();
-        try {
+        try (InputStream in = style.in()) {
             props.load(in);
             assertEquals("point", props.getProperty("type"));
-        } finally {
-            in.close();
         }
 
-        in = style.in();
-        try {
+        try (InputStream in = style.in()) {
             out = new StringWriter();
             IOUtils.copy(in, out, "UTF-8");
             assertFalse(out.toString().startsWith("#comment!"));
-        } finally {
-            in.close();
         }
     }
 
     @Test
     @Ignore
+    @SuppressWarnings("PMD.CloseResource")
     public void testPostAsPSLRaw() throws Exception {
         Properties props = new Properties();
         props.put("type", "point");
@@ -1151,6 +1150,7 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
 
     @Test
     @Ignore
+    @SuppressWarnings("PMD.CloseResource")
     public void testPutAsPSL() throws Exception {
         testPostAsPSL();
 
@@ -1169,27 +1169,22 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         assertEquals(200, response.getStatus());
 
         Resource style = getDataDirectory().style(getCatalog().getStyleByName("foo"));
-        InputStream in = style.in();
-        try {
+        try (InputStream in = style.in()) {
             props = new Properties();
             props.load(in);
             assertEquals("line", props.getProperty("type"));
-        } finally {
-            in.close();
         }
 
-        in = style.in();
-        try {
+        try (InputStream in = style.in()) {
             out = new StringWriter();
             IOUtils.copy(in, out, "UTF-8");
             assertFalse(out.toString().startsWith("#comment!"));
-        } finally {
-            in.close();
         }
     }
 
     @Test
     @Ignore
+    @SuppressWarnings("PMD.CloseResource")
     public void testPutAsPSLRaw() throws Exception {
         testPostAsPSL();
 
@@ -1208,22 +1203,16 @@ public class StyleControllerTest extends CatalogRESTTestSupport {
         assertEquals(200, response.getStatus());
 
         Resource style = getDataDirectory().style(getCatalog().getStyleByName("foo"));
-        InputStream in = style.in();
-        try {
+        try (InputStream in = style.in()) {
             props = new Properties();
             props.load(in);
             assertEquals("line", props.getProperty("type"));
-        } finally {
-            in.close();
         }
 
-        in = style.in();
-        try {
+        try (InputStream in = style.in()) {
             out = new StringWriter();
             IOUtils.copy(in, out, "UTF-8");
             assertTrue(out.toString().startsWith("#comment!"));
-        } finally {
-            in.close();
         }
     }
 

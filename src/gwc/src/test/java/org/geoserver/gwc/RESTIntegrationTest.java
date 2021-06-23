@@ -5,6 +5,7 @@
  */
 package org.geoserver.gwc;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathExists;
 import static org.custommonkey.xmlunit.XMLAssert.assertXpathNotExists;
@@ -35,6 +36,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.custommonkey.xmlunit.SimpleNamespaceContext;
 import org.custommonkey.xmlunit.XMLUnit;
+import org.custommonkey.xmlunit.XpathEngine;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.data.test.MockData;
 import org.geoserver.data.test.SystemTestData;
@@ -43,6 +45,7 @@ import org.geoserver.gwc.layer.GeoServerTileLayer;
 import org.geoserver.gwc.layer.GeoServerTileLayerInfo;
 import org.geoserver.gwc.layer.StyleParameterFilter;
 import org.geoserver.test.GeoServerSystemTestSupport;
+import org.geoserver.util.DimensionWarning.WarningType;
 import org.geowebcache.filter.parameters.FloatParameterFilter;
 import org.geowebcache.filter.parameters.ParameterFilter;
 import org.geowebcache.filter.parameters.StringParameterFilter;
@@ -564,11 +567,10 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
                     filters,
                     contains(
                             allOf(
-                                    Matchers.<ParameterFilter>hasProperty("key", is("STYLES")),
+                                    Matchers.hasProperty("key", is("STYLES")),
                                     isA(
-                                            (Class<ParameterFilter>)
-                                                    StyleParameterFilter.class.asSubclass(
-                                                            ParameterFilter.class)))));
+                                            StyleParameterFilter.class.asSubclass(
+                                                    ParameterFilter.class)))));
         }
         {
             final String xml =
@@ -593,12 +595,10 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
                     not(
                             contains(
                                     allOf(
-                                            Matchers.<ParameterFilter>hasProperty(
-                                                    "key", is("STYLES")),
+                                            Matchers.hasProperty("key", is("STYLES")),
                                             isA(
-                                                    (Class<ParameterFilter>)
-                                                            StyleParameterFilter.class.asSubclass(
-                                                                    ParameterFilter.class))))));
+                                                    StyleParameterFilter.class.asSubclass(
+                                                            ParameterFilter.class))))));
         }
     }
 
@@ -606,7 +606,6 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
     public void testGetSeedHtml() throws Exception {
         final String layerName = getLayerId(MockData.BASIC_POLYGONS);
         final String url = "gwc/rest/seed/" + layerName;
-        final String id = getCatalog().getLayerByName(layerName).getId();
 
         MockHttpServletResponse sr = getAsServletResponse(url);
         assertEquals(200, sr.getStatus());
@@ -617,7 +616,6 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
     public void testPostSeedHtmlForm() throws Exception {
         final String layerName = getLayerId(MockData.BASIC_POLYGONS);
         final String url = "gwc/rest/seed/" + layerName;
-        final String id = getCatalog().getLayerByName(layerName).getId();
 
         final String formData =
                 "threadCount=01&type=seed&gridSetId=EPSG%3A4326&tileFormat=image%2Fpng&zoomStart=00&zoomStop=12&minX=&minY=&maxX=&maxY=";
@@ -627,10 +625,10 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
         MockHttpServletRequest request = createRequest(url);
         request.setMethod("POST");
         request.setContentType("application/x-www-form-urlencoded");
-        request.setContent(formData.getBytes("UTF-8"));
+        request.setContent(formData.getBytes(UTF_8));
 
         BufferedRequestWrapper wrapper =
-                new BufferedRequestWrapper(request, "UTF-8", formData.getBytes("UTF-8"));
+                new BufferedRequestWrapper(request, "UTF-8", formData.getBytes(UTF_8));
 
         MockHttpServletResponse sr = dispatch(wrapper);
 
@@ -642,7 +640,6 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
     public void testGetSeedJson() throws Exception {
         final String layerName = getLayerId(MockData.BASIC_POLYGONS);
         final String url = "gwc/rest/seed/" + layerName + ".json";
-        final String id = getCatalog().getLayerByName(layerName).getId();
 
         MockHttpServletResponse sr = getAsServletResponse(url);
         assertEquals(200, sr.getStatus());
@@ -655,7 +652,6 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
     public void testPostSeedXml() throws Exception {
         final String layerName = getLayerId(MockData.BASIC_POLYGONS);
         final String url = "gwc/rest/seed/" + layerName + ".xml";
-        final String id = getCatalog().getLayerByName(layerName).getId();
 
         final String xml =
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -680,7 +676,6 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
     public void testPostSeedJson() throws Exception {
         final String layerName = getLayerId(MockData.BASIC_POLYGONS);
         final String url = "gwc/rest/seed/" + layerName + ".json";
-        final String id = getCatalog().getLayerByName(layerName).getId();
 
         final String json =
                 "{ \"seedRequest\": {\n"
@@ -723,13 +718,62 @@ public class RESTIntegrationTest extends GeoServerSystemTestSupport {
         MockHttpServletRequest request = createRequest(url);
         request.setMethod("POST");
         request.setContentType("application/x-www-form-urlencoded");
-        request.setContent(formData.getBytes("UTF-8"));
+        request.setContent(formData.getBytes(UTF_8));
 
         BufferedRequestWrapper wrapper =
-                new BufferedRequestWrapper(request, "UTF-8", formData.getBytes("UTF-8"));
+                new BufferedRequestWrapper(request, "UTF-8", formData.getBytes(UTF_8));
 
         MockHttpServletResponse sr = dispatch(wrapper);
 
         assertEquals(200, sr.getStatus());
+    }
+
+    @Test
+    public void testPutWarningSkips() throws Exception {
+        final String layerName = getLayerId(MockData.LAKES);
+
+        final GWC mediator = GWC.get();
+        assertTrue(mediator.tileLayerExists(layerName));
+        mediator.removeTileLayers(Lists.newArrayList(layerName));
+        assertFalse(mediator.tileLayerExists(layerName));
+
+        final String xml =
+                "<GeoServerLayer>" //
+                        + " <enabled>true</enabled>" //
+                        + " <name>"
+                        + layerName
+                        + "</name>" //
+                        + " <mimeFormats><string>image/png8</string></mimeFormats>" //
+                        + " <gridSubsets>" //
+                        + "  <gridSubset><gridSetName>GoogleCRS84Quad</gridSetName></gridSubset>" //
+                        + "  <gridSubset><gridSetName>EPSG:4326</gridSetName></gridSubset>" //
+                        + " </gridSubsets>" //
+                        + " <metaWidthHeight><int>9</int><int>6</int></metaWidthHeight>" //
+                        + " <cacheWarningSkips>\n"
+                        + "   <warning>Default</warning>\n"
+                        + "   <warning>FailedNearest</warning>\n"
+                        + " </cacheWarningSkips>"
+                        + "</GeoServerLayer>";
+
+        final String url = "gwc/rest/layers/" + layerName + ".xml";
+
+        MockHttpServletResponse response = super.putAsServletResponse(url, xml, "text/xml");
+
+        assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+
+        assertTrue(mediator.tileLayerExists(layerName));
+        GeoServerTileLayer tileLayer = (GeoServerTileLayer) mediator.getTileLayerByName(layerName);
+        GeoServerTileLayerInfo info = tileLayer.getInfo();
+        assertThat(
+                info.getCacheWarningSkips(),
+                Matchers.containsInAnyOrder(WarningType.Default, WarningType.FailedNearest));
+
+        // get it back, check the representation
+        Document dom = getAsDOM(url);
+        XpathEngine xpath = XMLUnit.newXpathEngine();
+        // no custom attribute for the class, we set a default
+        assertEquals("", xpath.evaluate("//cacheWarningSkips/class", dom));
+        assertEquals("Default", xpath.evaluate("//cacheWarningSkips/warning[1]", dom));
+        assertEquals("FailedNearest", xpath.evaluate("//cacheWarningSkips/warning[2]", dom));
     }
 }

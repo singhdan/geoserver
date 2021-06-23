@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.logging.Level;
 import javax.xml.namespace.QName;
 import net.sf.json.JSONArray;
@@ -140,11 +139,11 @@ public class GetFeatureInfoTest extends WMSTestSupport {
         testData.addStyle("stacker", "stacker.sld", GetFeatureInfoTest.class, catalog);
         testData.addVectorLayer(
                 SQUARES,
-                Collections.EMPTY_MAP,
+                Collections.emptyMap(),
                 "squares.properties",
                 GetFeatureInfoTest.class,
                 catalog);
-        Map propertyMap = new HashMap<SystemTestData.LayerProperty, Object>();
+        Map<LayerProperty, Object> propertyMap = new HashMap<>();
         propertyMap.put(LayerProperty.STYLE, "raster");
         testData.addRasterLayer(
                 TASMANIA_BM, "tazbm.tiff", "tiff", propertyMap, SystemTestData.class, catalog);
@@ -162,7 +161,7 @@ public class GetFeatureInfoTest extends WMSTestSupport {
         setupRasterDimension(
                 TIMESERIES, ResourceInfo.TIME, DimensionPresentation.LIST, null, null, null);
 
-        Map<LayerProperty, Object> properties = new HashMap<SystemTestData.LayerProperty, Object>();
+        Map<LayerProperty, Object> properties = new HashMap<>();
         properties.put(
                 LayerProperty.LATLON_ENVELOPE,
                 new ReferencedEnvelope(
@@ -188,7 +187,7 @@ public class GetFeatureInfoTest extends WMSTestSupport {
                 GetFeatureInfoTest.class,
                 catalog);
 
-        properties = new HashMap<SystemTestData.LayerProperty, Object>();
+        properties = new HashMap<>();
         properties.put(
                 LayerProperty.LATLON_ENVELOPE,
                 new ReferencedEnvelope(
@@ -469,7 +468,7 @@ public class GetFeatureInfoTest extends WMSTestSupport {
 
         MockHttpServletResponse response = getAsServletResponse(request, "");
         // Check if the character encoding is the one expected
-        assertTrue("UTF-8".equals(response.getCharacterEncoding()));
+        assertEquals("UTF-8", response.getCharacterEncoding());
     }
 
     /**
@@ -1408,13 +1407,9 @@ public class GetFeatureInfoTest extends WMSTestSupport {
         Coordinate[] coordinates =
                 Arrays.stream(coordsArray.toArray())
                         .map(
-                                new Function<Object, Coordinate>() {
-                                    @Override
-                                    public Coordinate apply(Object t) {
-                                        JSONArray cArray = (JSONArray) t;
-                                        return new Coordinate(
-                                                cArray.getDouble(0), cArray.getDouble(1));
-                                    }
+                                t -> {
+                                    JSONArray cArray = (JSONArray) t;
+                                    return new Coordinate(cArray.getDouble(0), cArray.getDouble(1));
                                 })
                         .toArray(Coordinate[]::new);
 

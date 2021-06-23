@@ -270,8 +270,8 @@ public class VectorMapRenderUtils {
         }
 
         // the basic crs transformation, if any
-        MathTransform2D sourceToTarget;
-        sourceToTarget = (MathTransform2D) CRS.findMathTransform(sourceCRS, destCRS, true);
+        MathTransform2D sourceToTarget =
+                (MathTransform2D) CRS.findMathTransform(sourceCRS, destCRS, true);
 
         if (transform == null) {
             return sourceToTarget;
@@ -314,7 +314,7 @@ public class VectorMapRenderUtils {
             // filter2 OR filter3);
 
             final int maxFilters = 5;
-            final List<Filter> filtersToDS = new ArrayList<Filter>();
+            final List<Filter> filtersToDS = new ArrayList<>();
             // look at each featuretypestyle
             for (LiteFeatureTypeStyle style : styles) {
                 if (style.elseRules.length > 0) // uh-oh has elseRule
@@ -358,7 +358,7 @@ public class VectorMapRenderUtils {
             Rectangle screenSize)
             throws IOException {
 
-        ArrayList<LiteFeatureTypeStyle> result = new ArrayList<LiteFeatureTypeStyle>();
+        ArrayList<LiteFeatureTypeStyle> result = new ArrayList<>();
 
         LiteFeatureTypeStyle lfts;
 
@@ -390,11 +390,8 @@ public class VectorMapRenderUtils {
     private static List<Rule>[] splitRules(
             final FeatureTypeStyle fts, final double scaleDenominator) {
 
-        List<Rule> ruleList = new ArrayList<Rule>();
-        List<Rule> elseRuleList = new ArrayList<Rule>();
-
-        ruleList = new ArrayList<>();
-        elseRuleList = new ArrayList<>();
+        List<Rule> ruleList = new ArrayList<>();
+        List<Rule> elseRuleList = new ArrayList<>();
 
         for (Rule r : fts.rules()) {
             if (isWithInScale(r, scaleDenominator)) {
@@ -406,7 +403,7 @@ public class VectorMapRenderUtils {
             }
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "PMD.UseShortArrayInitializer"})
         List<Rule>[] ret = new List[] {ruleList, elseRuleList};
         return ret;
     }

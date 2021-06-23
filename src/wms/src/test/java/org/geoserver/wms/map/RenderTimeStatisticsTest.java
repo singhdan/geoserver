@@ -24,10 +24,11 @@ public class RenderTimeStatisticsTest {
 
     @Before
     public void setUp() {
-        layers = new ArrayList<Layer>(2);
+        layers = new ArrayList<>(2);
         layers.add(
                 new Layer() {
 
+                    @Override
                     public ReferencedEnvelope getBounds() {
                         return null;
                     }
@@ -41,6 +42,7 @@ public class RenderTimeStatisticsTest {
         layers.add(
                 new Layer() {
 
+                    @Override
                     public ReferencedEnvelope getBounds() {
                         return null;
                     }

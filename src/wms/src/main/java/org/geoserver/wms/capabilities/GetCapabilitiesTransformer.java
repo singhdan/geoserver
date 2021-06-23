@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -125,7 +124,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
      * rule: {@code <!ATTLIST MetadataURL type ( TC211 | FGDC ) #REQUIRED>}
      */
     private static final Set<String> SUPPORTED_MDLINK_TYPES =
-            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList("FGDC", "TC211")));
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("FGDC", "TC211")));
 
     /**
      * The geoserver base URL to append it the schemas/wms/1.1.1/WMS_MS_Capabilities.dtd DTD
@@ -173,7 +172,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
         this.getLegendGraphicFormats = getLegendGraphicFormats;
         this.baseURL = baseURL;
         this.extCapsProviders =
-                extCapsProviders == null ? Collections.EMPTY_LIST : extCapsProviders;
+                extCapsProviders == null ? Collections.emptyList() : extCapsProviders;
         this.setNamespaceDeclarationEnabled(false);
         setIndentation(2);
         final Charset encoding = wms.getCharSet();
@@ -312,6 +311,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
          * @param o the {@link GetCapabilitiesRequest}
          * @throws IllegalArgumentException if {@code o} is not of the expected type
          */
+        @Override
         public void encode(Object o) throws IllegalArgumentException {
             if (!(o instanceof GetCapabilitiesRequest)) {
                 throw new IllegalArgumentException();
@@ -410,8 +410,8 @@ public class GetCapabilitiesTransformer extends TransformerBase {
             start("KeywordList");
 
             if (keywords != null) {
-                for (Iterator<KeywordInfo> it = keywords.iterator(); it.hasNext(); ) {
-                    element("Keyword", it.next().getValue());
+                for (KeywordInfo keyword : keywords) {
+                    element("Keyword", keyword.getValue());
                 }
             }
 
@@ -502,7 +502,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
 
             start("GetMap");
 
-            List<String> sortedFormats = new ArrayList<String>(getMapFormats);
+            List<String> sortedFormats = new ArrayList<>(getMapFormats);
             Collections.sort(sortedFormats);
             // this is a hack necessary to make cite tests pass: we need an output format
             // that is equal to the mime type as the first one....
@@ -510,8 +510,8 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                 sortedFormats.remove("image/png");
                 sortedFormats.add(0, "image/png");
             }
-            for (Iterator<String> it = sortedFormats.iterator(); it.hasNext(); ) {
-                element("Format", String.valueOf(it.next()));
+            for (String sortedFormat : sortedFormats) {
+                element("Format", String.valueOf(sortedFormat));
             }
 
             handleDcpType(serviceUrl, null);
@@ -635,18 +635,22 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                 try {
                     cp.encode(
                             new ExtendedCapabilitiesProvider.Translator() {
+                                @Override
                                 public void start(String element) {
                                     CapabilitiesTranslator.this.start(element);
                                 }
 
+                                @Override
                                 public void start(String element, Attributes attributes) {
                                     CapabilitiesTranslator.this.start(element, attributes);
                                 }
 
+                                @Override
                                 public void chars(String text) {
                                     CapabilitiesTranslator.this.chars(text);
                                 }
 
+                                @Override
                                 public void end(String element) {
                                     CapabilitiesTranslator.this.end(element);
                                 }
@@ -681,8 +685,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
             // get filtered and ordered layers:
             final List<LayerInfo> layers = getOrderedLayers();
             final List<LayerGroupInfo> layerGroups = getOrderedLayerGroups();
-            Set<LayerInfo> layersAlreadyProcessed =
-                    getLayersInGroups(new ArrayList<LayerGroupInfo>(layerGroups));
+            Set<LayerInfo> layersAlreadyProcessed = getLayersInGroups(new ArrayList<>(layerGroups));
 
             if (includeRootLayer(layers, layerGroups, layersAlreadyProcessed)) {
                 start("Layer");
@@ -711,7 +714,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
 
                 // encode layer groups
                 try {
-                    handleLayerGroups(new ArrayList<LayerGroupInfo>(layerGroups), false);
+                    handleLayerGroups(new ArrayList<>(layerGroups), false);
                 } catch (Exception e) {
                     throw new RuntimeException(
                             "Can't obtain Envelope of Layer-Groups: " + e.getMessage(), e);
@@ -723,17 +726,17 @@ public class GetCapabilitiesTransformer extends TransformerBase {
 
                 end("Layer");
             } else {
-                if (layerGroups.size() > 0) {
+                if (layerGroups.isEmpty()) {
+                    // now encode the single layer
+                    LayerTree featuresLayerTree = new LayerTree(layers);
+                    handleLayerTree(featuresLayerTree, layersAlreadyProcessed, true);
+                } else {
                     try {
-                        handleLayerGroups(new ArrayList<LayerGroupInfo>(layerGroups), true);
+                        handleLayerGroups(new ArrayList<>(layerGroups), true);
                     } catch (Exception e) {
                         throw new RuntimeException(
                                 "Can't obtain Envelope of Layer-Groups: " + e.getMessage(), e);
                     }
-                } else {
-                    // now encode the single layer
-                    LayerTree featuresLayerTree = new LayerTree(layers);
-                    handleLayerTree(featuresLayerTree, layersAlreadyProcessed, true);
                 }
             }
         }
@@ -773,10 +776,10 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                             .filter(layer -> includeLayer(layersAlreadyProcessed, layer))
                             .collect(Collectors.toList());
             List<LayerGroupInfo> rootGroups = filterNestedGroups(layerGroups);
-            if (rootLayers.size() == 1 && rootGroups.size() == 0) {
+            if (rootLayers.size() == 1 && rootGroups.isEmpty()) {
                 return rootLayers.get(0);
             }
-            if (rootLayers.size() == 0 && rootGroups.size() == 1) {
+            if (rootLayers.isEmpty() && rootGroups.size() == 1) {
                 return rootGroups.get(0);
             }
             return null;
@@ -784,7 +787,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
 
         private Set<String> getServiceSRSList() {
             List<String> srsList = serviceInfo.getSRS();
-            Set<String> srs = new LinkedHashSet<String>();
+            Set<String> srs = new LinkedHashSet<>();
             if (srsList != null) {
                 srs.addAll(srsList);
             }
@@ -861,7 +864,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
             final Set<String> capabilitiesCrsIdentifiers;
             if (epsgCodes.isEmpty()) {
                 comment("All supported EPSG projections:");
-                capabilitiesCrsIdentifiers = new LinkedHashSet<String>();
+                capabilitiesCrsIdentifiers = new LinkedHashSet<>();
                 for (String code : CRS.getSupportedCodes("AUTO")) {
                     if ("WGS84(DD)".equals(code)) continue;
                     capabilitiesCrsIdentifiers.add("AUTO:" + code);
@@ -869,7 +872,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                 capabilitiesCrsIdentifiers.addAll(CRS.getSupportedCodes("EPSG"));
             } else {
                 comment("Limited list of EPSG projections:");
-                capabilitiesCrsIdentifiers = new LinkedHashSet<String>(epsgCodes);
+                capabilitiesCrsIdentifiers = new LinkedHashSet<>(epsgCodes);
             }
 
             try {
@@ -927,16 +930,10 @@ public class GetCapabilitiesTransformer extends TransformerBase {
         /** @param layerTree */
         private void handleLayerTree(
                 final LayerTree layerTree, Set<LayerInfo> layersAlreadyProcessed, boolean isRoot) {
-            final List<LayerInfo> data = new ArrayList<LayerInfo>(layerTree.getData());
+            final List<LayerInfo> data = new ArrayList<>(layerTree.getData());
             final Collection<LayerTree> children = layerTree.getChildrens();
 
-            Collections.sort(
-                    data,
-                    new Comparator<LayerInfo>() {
-                        public int compare(LayerInfo o1, LayerInfo o2) {
-                            return o1.getName().compareTo(o2.getName());
-                        }
-                    });
+            Collections.sort(data, (o1, o2) -> o1.getName().compareTo(o2.getName()));
 
             for (LayerInfo layer : data) {
                 // ask for enabled() instead of isEnabled() to account for disabled resource/store
@@ -1253,7 +1250,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
             Collection<MetadataLinkInfo> metadataLinks = layerGroup.getMetadataLinks();
             if (metadataLinks == null || metadataLinks.isEmpty()) {
                 // Aggregated metadata links (see GEOS-4500)
-                Set<MetadataLinkInfo> aggregatedLinks = new HashSet<MetadataLinkInfo>();
+                Set<MetadataLinkInfo> aggregatedLinks = new HashSet<>();
                 for (LayerInfo layer : Iterables.filter(layerGroup.getLayers(), LayerInfo.class)) {
                     List<MetadataLinkInfo> metadataLinksLayer =
                             layer.getResource().getMetadataLinks();
@@ -1279,18 +1276,25 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                     }
                 }
             }
-
-            handleLayerGroupStyles(layerName);
+            if (encodeGroupDefaultStyle(layerGroup)) handleLayerGroupStyles(layerName);
 
             handleScaleHint(layerGroup);
 
             end("Layer");
         }
 
-        protected Set<LayerInfo> getLayersInGroups(List<LayerGroupInfo> layerGroups) {
-            Set<LayerInfo> layersAlreadyProcessed = new HashSet<LayerInfo>();
+        private boolean encodeGroupDefaultStyle(LayerGroupInfo lgi) {
+            LayerGroupInfo.Mode mode = lgi.getMode();
+            boolean opaqueOrSingle =
+                    mode.equals(LayerGroupInfo.Mode.SINGLE)
+                            || mode.equals(LayerGroupInfo.Mode.OPAQUE_CONTAINER);
+            return opaqueOrSingle || wmsConfig.isDefaultGroupStyleEnabled();
+        }
 
-            if (layerGroups == null || layerGroups.size() == 0) {
+        protected Set<LayerInfo> getLayersInGroups(List<LayerGroupInfo> layerGroups) {
+            Set<LayerInfo> layersAlreadyProcessed = new HashSet<>();
+
+            if (layerGroups == null || layerGroups.isEmpty()) {
                 return layersAlreadyProcessed;
             }
 
@@ -1372,7 +1376,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
          * layer groups
          */
         private List<LayerGroupInfo> filterNestedGroups(List<LayerGroupInfo> allGroups) {
-            LinkedHashSet<LayerGroupInfo> result = new LinkedHashSet<LayerGroupInfo>(allGroups);
+            LinkedHashSet<LayerGroupInfo> result = new LinkedHashSet<>(allGroups);
             for (LayerGroupInfo group : allGroups) {
                 for (PublishedInfo pi : group.getLayers()) {
                     if (pi instanceof LayerGroupInfo) {
@@ -1381,7 +1385,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                 }
             }
 
-            return new ArrayList<LayerGroupInfo>(result);
+            return new ArrayList<>(result);
         }
 
         protected void handleAttribution(PublishedInfo layer) {
@@ -1511,6 +1515,9 @@ public class GetCapabilitiesTransformer extends TransformerBase {
             element("Format", defaultFormat);
             attrs.clear();
 
+            // encode the Legend width and height in the URL too if we have a static legend
+            boolean hasExternalGraphic = legend != null && legend.getOnlineResource() != null;
+
             Map<String, String> params =
                     params(
                             "request",
@@ -1518,9 +1525,15 @@ public class GetCapabilitiesTransformer extends TransformerBase {
                             "format",
                             defaultFormat,
                             "width",
-                            String.valueOf(GetLegendGraphicRequest.DEFAULT_WIDTH),
+                            String.valueOf(
+                                    hasExternalGraphic
+                                            ? legendWidth
+                                            : GetLegendGraphicRequest.DEFAULT_WIDTH),
                             "height",
-                            String.valueOf(GetLegendGraphicRequest.DEFAULT_HEIGHT),
+                            String.valueOf(
+                                    hasExternalGraphic
+                                            ? legendHeight
+                                            : GetLegendGraphicRequest.DEFAULT_HEIGHT),
                             "layer",
                             layerName);
             if (style != null) {
@@ -1722,7 +1735,7 @@ public class GetCapabilitiesTransformer extends TransformerBase {
          */
         private void handleLayerGroupStyles(String layerName) {
             start("Style");
-            element("Name", LAYER_GROUP_STYLE_NAME);
+            element("Name", LAYER_GROUP_STYLE_NAME.concat("-").concat(layerName));
             element(
                     "Title",
                     LAYER_GROUP_STYLE_TITLE_PREFIX

@@ -8,7 +8,6 @@ package org.geoserver.wfs;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -109,8 +108,7 @@ public class LockFeature {
             // in order to allow for both "all" and "some" lock behaviour
             // TODO: if the lock is the default this default, lock the whole
             // query directly, should be a lot faster
-            for (int i = 0, n = locks.size(); i < n; i++) {
-                Lock lock = locks.get(i);
+            for (Lock lock : locks) {
                 LOGGER.info("curLock is " + lock);
 
                 QName typeName = lock.getTypeName();
@@ -163,12 +161,10 @@ public class LockFeature {
                     throw new WFSException(request, e);
                 }
 
-                FeatureIterator reader = null;
                 int numberLocked = -1;
-
-                try {
-                    for (reader = features.features(); reader.hasNext(); ) {
-                        SimpleFeature feature = (SimpleFeature) reader.next();
+                try (FeatureIterator fi = features.features()) {
+                    while (fi.hasNext()) {
+                        SimpleFeature feature = (SimpleFeature) fi.next();
 
                         FeatureId fid = fid(feature.getID());
                         Id fidFilter = fidFilter(fid);
@@ -194,7 +190,7 @@ public class LockFeature {
                             Query query =
                                     new Query(
                                             meta.getName(),
-                                            (Filter) fidFilter,
+                                            fidFilter,
                                             Query.DEFAULT_MAX,
                                             Query.ALL_NAMES,
                                             lock.getHandle());
@@ -238,10 +234,6 @@ public class LockFeature {
                     }
                 } catch (IOException ioe) {
                     throw new WFSException(request, ioe);
-                } finally {
-                    if (reader != null) {
-                        reader.close();
-                    }
                 }
 
                 // refresh lock times, so they all start the same instant and we
@@ -250,9 +242,7 @@ public class LockFeature {
                 // lock
                 // feature response has been totally written
                 if (numberLocked > 0) {
-                    Transaction t = new DefaultTransaction();
-
-                    try {
+                    try (Transaction t = new DefaultTransaction()) {
                         try {
                             t.addAuthorization(fLock.getAuthorization());
                             DataStore dataStore = (DataStore) source.getDataStore();
@@ -262,12 +252,6 @@ public class LockFeature {
                         }
                     } catch (IOException e) {
                         throw new WFSException(request, e);
-                    } finally {
-                        try {
-                            t.close();
-                        } catch (IOException e) {
-                            throw new WFSException(request, e);
-                        }
                     }
                 }
             }
@@ -308,8 +292,8 @@ public class LockFeature {
         try {
             List dataStores = catalog.getDataStores();
 
-            for (Iterator i = dataStores.iterator(); i.hasNext(); ) {
-                DataStoreInfo meta = (DataStoreInfo) i.next();
+            for (Object store : dataStores) {
+                DataStoreInfo meta = (DataStoreInfo) store;
                 DataStore dataStore = null;
 
                 // TODO: support locking for DataAccess
@@ -330,21 +314,13 @@ public class LockFeature {
                     continue; // locks not supported
                 }
 
-                org.geotools.data.Transaction t =
-                        new DefaultTransaction("Refresh " + meta.getWorkspace().getName());
-
-                try {
+                try (Transaction t =
+                        new DefaultTransaction("Refresh " + meta.getWorkspace().getName())) {
                     t.addAuthorization(lockId);
                     lockingManager.release(lockId, t);
 
                 } catch (IOException e) {
                     LOGGER.log(Level.WARNING, e.getMessage(), e);
-                } finally {
-                    try {
-                        t.close();
-                    } catch (IOException closeException) {
-                        LOGGER.log(Level.FINEST, closeException.getMessage(), closeException);
-                    }
                 }
             }
         } catch (Exception e) {
@@ -362,8 +338,8 @@ public class LockFeature {
         try {
             List dataStores = catalog.getDataStores();
 
-            for (Iterator i = dataStores.iterator(); i.hasNext(); ) {
-                DataStoreInfo meta = (DataStoreInfo) i.next();
+            for (Object store : dataStores) {
+                DataStoreInfo meta = (DataStoreInfo) store;
                 DataStore dataStore = null;
 
                 // TODO: support locking for DataAccess
@@ -396,8 +372,8 @@ public class LockFeature {
         try {
             List dataStores = catalog.getDataStores();
 
-            for (Iterator i = dataStores.iterator(); i.hasNext(); ) {
-                DataStoreInfo meta = (DataStoreInfo) i.next();
+            for (Object store : dataStores) {
+                DataStoreInfo meta = (DataStoreInfo) store;
                 DataStore dataStore = null;
 
                 // TODO: support locking for DataAccess
@@ -437,8 +413,8 @@ public class LockFeature {
 
             // check for lock existance
 
-            for (Iterator i = dataStores.iterator(); i.hasNext(); ) {
-                DataStoreInfo meta = (DataStoreInfo) i.next();
+            for (Object store : dataStores) {
+                DataStoreInfo meta = (DataStoreInfo) store;
                 DataStore dataStore = null;
 
                 // TODO: support locking for DataAccess
@@ -470,10 +446,8 @@ public class LockFeature {
                     }
                 }
 
-                org.geotools.data.Transaction t =
-                        new DefaultTransaction("Refresh " + meta.getWorkspace().getName());
-
-                try {
+                try (Transaction t =
+                        new DefaultTransaction("Refresh " + meta.getWorkspace().getName())) {
                     t.addAuthorization(lockId);
 
                     if (lockingManager.refresh(lockId, t)) {
@@ -481,12 +455,6 @@ public class LockFeature {
                     }
                 } catch (IOException e) {
                     LOGGER.log(Level.WARNING, e.getMessage(), e);
-                } finally {
-                    try {
-                        t.close();
-                    } catch (IOException closeException) {
-                        LOGGER.log(Level.FINEST, closeException.getMessage(), closeException);
-                    }
                 }
             }
         } catch (Exception e) {
@@ -511,7 +479,7 @@ public class LockFeature {
     }
 
     private Id fidFilter(FeatureId fid) {
-        HashSet ids = new HashSet();
+        Set<FeatureId> ids = new HashSet<>();
         ids.add(fid);
 
         return filterFactory.id(ids);

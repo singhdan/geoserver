@@ -29,7 +29,7 @@ public class ScaleLineDecoration implements MapDecoration {
     private static final Logger LOGGER =
             org.geotools.util.logging.Logging.getLogger("org.geoserver.wms.responses");
 
-    private static Map<String, Double> INCHES_PER_UNIT = new HashMap<String, Double>();
+    private static Map<String, Double> INCHES_PER_UNIT = new HashMap<>();
 
     static {
         INCHES_PER_UNIT.put("inches", 1.0);
@@ -76,6 +76,7 @@ public class ScaleLineDecoration implements MapDecoration {
         }
     }
 
+    @Override
     public void loadOptions(Map<String, String> options) {
         if (options.get("fontsize") != null) {
             try {
@@ -122,6 +123,7 @@ public class ScaleLineDecoration implements MapDecoration {
         }
     }
 
+    @Override
     public Dimension findOptimalSize(Graphics2D g2d, WMSMapContent mapContent) {
         FontMetrics metrics = g2d.getFontMetrics(g2d.getFont());
         return new Dimension(suggestedWidth, 8 + (metrics.getHeight() + metrics.getDescent()) * 2);
@@ -146,6 +148,7 @@ public class ScaleLineDecoration implements MapDecoration {
         return (int) (barLength * pow10);
     }
 
+    @Override
     public void paint(Graphics2D g2d, Rectangle paintArea, WMSMapContent mapContent)
             throws Exception {
         Color oldColor = g2d.getColor();
@@ -253,7 +256,7 @@ public class ScaleLineDecoration implements MapDecoration {
             String topText = topRounded + " " + topUnits;
             g2d.drawString(
                     topText,
-                    leftX + (int) ((topPx - metrics.stringWidth(topText)) / 2),
+                    leftX + ((topPx - metrics.stringWidth(topText)) / 2),
                     centerY - prongHeight + metrics.getAscent());
         }
 
@@ -279,7 +282,7 @@ public class ScaleLineDecoration implements MapDecoration {
             String bottomText = bottomRounded + " " + bottomUnits;
             g2d.drawString(
                     bottomText,
-                    leftX + (int) ((bottomPx - metrics.stringWidth(bottomText)) / 2),
+                    leftX + ((bottomPx - metrics.stringWidth(bottomText)) / 2),
                     centerY + metrics.getHeight());
         }
 

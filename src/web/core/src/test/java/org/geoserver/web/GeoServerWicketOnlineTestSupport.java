@@ -1,5 +1,6 @@
 package org.geoserver.web;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ import org.apache.commons.io.IOUtils;
  * @see GeoServerWicketOnlineTest
  */
 public class GeoServerWicketOnlineTestSupport {
-    protected static final String GEOSERVER_BASE_URL = "http://localhost:8080/geoserver";
+    protected static final String GEOSERVER_BASE_URL = "http://localhost:9090/geoserver";
 
     protected boolean isOnline() {
         try {
@@ -80,7 +81,7 @@ public class GeoServerWicketOnlineTestSupport {
         }
 
         // Verify that we have logged in successfuly
-        String homePage = IOUtils.toString(huc.getInputStream(), "UTF-8");
+        String homePage = IOUtils.toString(huc.getInputStream(), UTF_8);
         assertTrue(homePage.contains("Logged in as <span>" + username + "</span>"));
 
         // Return the JSESSIONID for the authenticated session
@@ -92,9 +93,9 @@ public class GeoServerWicketOnlineTestSupport {
         String jsessionid = null;
 
         String[] parts = cookie.split(";");
-        for (int i = 0; i < parts.length; i++) {
-            if (parts[i].startsWith("JSESSIONID=")) {
-                jsessionid = parts[i];
+        for (String part : parts) {
+            if (part.startsWith("JSESSIONID=")) {
+                jsessionid = part;
             }
         }
         return jsessionid;
@@ -223,9 +224,9 @@ public class GeoServerWicketOnlineTestSupport {
     protected HttpURLConnection doPost(HttpURLConnection huc, String body) throws IOException {
         huc.connect();
 
-        PrintWriter out = new java.io.PrintWriter(huc.getOutputStream());
-        out.print(body);
-        out.close();
+        try (PrintWriter out = new java.io.PrintWriter(huc.getOutputStream())) {
+            out.print(body);
+        }
 
         return huc;
     }

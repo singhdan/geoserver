@@ -18,9 +18,10 @@ import org.junit.Test;
 public class RawMapTest {
 
     @Test
+    @SuppressWarnings("PMD.CloseResource")
     public void testInputStream() throws Exception {
         InputStream stream = createMock(InputStream.class);
-        expect(stream.read((byte[]) anyObject())).andReturn(-1).once();
+        expect(stream.read(anyObject())).andReturn(-1).once();
         replay(stream);
 
         WMSMapContent map = createNiceMock(WMSMapContent.class);

@@ -94,10 +94,11 @@ public class DefaultNetCDFEncoder extends AbstractNetCDFEncoder {
     }
 
     /** Initialize the NetCDF variables on this writer */
+    @Override
     protected void initializeVariables() {
 
         // group the dimensions to be added to the variable
-        List<Dimension> netCDFDimensions = new LinkedList<Dimension>();
+        List<Dimension> netCDFDimensions = new LinkedList<>();
         for (NetCDFDimensionMapping dimension : dimensionsManager.getDimensions()) {
             netCDFDimensions.add(dimension.getNetCDFDimension());
         }
@@ -155,7 +156,7 @@ public class DefaultNetCDFEncoder extends AbstractNetCDFEncoder {
             }
             if (inputUoM != null && hasDefinedUoM) {
                 try {
-                    Unit outputUoM = NetCDFUnitFormat.parse(variableUoM);
+                    Unit<?> outputUoM = NetCDFUnitFormat.parse(variableUoM);
                     if (outputUoM != null && !inputUoM.equals(outputUoM)) {
                         if (!inputUoM.isCompatible(outputUoM)) {
                             if (LOGGER.isLoggable(Level.WARNING)) {
@@ -167,7 +168,7 @@ public class DefaultNetCDFEncoder extends AbstractNetCDFEncoder {
                                                 + " are incompatible.\nNo unit conversion will be performed");
                             }
                         } else {
-                            unitConverter = inputUoM.getConverterTo(outputUoM);
+                            unitConverter = getConverter(inputUoM, outputUoM);
                         }
                     }
                 } catch (UnconvertibleException ce) {
@@ -312,7 +313,14 @@ public class DefaultNetCDFEncoder extends AbstractNetCDFEncoder {
         }
     }
 
+    /** Makes conversion compile when the two units are of an unknown quantity */
+    @SuppressWarnings("unchecked")
+    private UnitConverter getConverter(Unit<?> inputUoM, Unit<?> outputUoM) {
+        return inputUoM.getConverterTo((Unit) outputUoM);
+    }
+
     /** Set the variables values */
+    @Override
     protected void writeDataValues() throws IOException, InvalidRangeException {
         // Initialize dimensions sizes
         final int numDimensions = dimensionsManager.getNumDimensions();
@@ -360,7 +368,7 @@ public class DefaultNetCDFEncoder extends AbstractNetCDFEncoder {
             int maxTileY = maxY / tileHeight - (maxY < 0 ? (-maxY % tileHeight > 0 ? 1 : 0) : 0);
 
             final Index matrixIndex = matrix.getIndex();
-            final int indexing[] = new int[numDimensions];
+            final int[] indexing = new int[numDimensions];
 
             // Update the NetCDF array indexing to set values for a specific 2D slice
             updateIndexing(indexing, gridCoverage);

@@ -435,8 +435,7 @@ public class KMLReflectorTest extends WMSTestSupport {
                 "attachment; filename=cite-BasicPolygons.kmz",
                 response.getHeader("Content-Disposition"));
 
-        ZipInputStream zis = new ZipInputStream(getBinaryInputStream(response));
-        try {
+        try (ZipInputStream zis = new ZipInputStream(getBinaryInputStream(response))) {
             // first entry, the kml document itself
             ZipEntry entry = zis.getNextEntry();
             assertEquals("wms.kml", entry.getName());
@@ -460,8 +459,6 @@ public class KMLReflectorTest extends WMSTestSupport {
             assertEquals("images/layers_0.png", entry.getName());
             zis.closeEntry();
             assertNull(zis.getNextEntry());
-        } finally {
-            zis.close();
         }
     }
 
@@ -513,28 +510,23 @@ public class KMLReflectorTest extends WMSTestSupport {
         MockHttpServletResponse response = getAsServletResponse(requestUrl);
         assertEquals(KMZMapOutputFormat.MIME_TYPE, response.getContentType());
 
-        ZipFile zipFile = null;
-        try {
-            // create the kmz
-            File tempDir =
-                    org.geoserver.util.IOUtils.createRandomDirectory(
-                            "./target", "kmplacemark", "test");
-            tempDir.deleteOnExit();
+        // create the kmz
+        File tempDir =
+                org.geoserver.util.IOUtils.createRandomDirectory("./target", "kmplacemark", "test");
+        tempDir.deleteOnExit();
 
-            File zip = new File(tempDir, "kmz.zip");
-            zip.deleteOnExit();
+        File zip = new File(tempDir, "kmz.zip");
+        zip.deleteOnExit();
 
-            FileOutputStream output = new FileOutputStream(zip);
+        try (FileOutputStream output = new FileOutputStream(zip)) {
             FileUtils.writeByteArrayToFile(zip, getBinary(response));
-
             output.flush();
-            output.close();
+        }
 
-            assertTrue(zip.exists());
+        assertTrue(zip.exists());
 
-            // unzip and test it
-            zipFile = new ZipFile(zip);
-
+        // unzip and test it
+        try (ZipFile zipFile = new ZipFile(zip)) {
             ZipEntry entry = zipFile.getEntry("wms.kml");
             assertNotNull(entry);
             assertNotNull(zipFile.getEntry("images/layers_0.png"));
@@ -543,14 +535,14 @@ public class KMLReflectorTest extends WMSTestSupport {
             byte[] buffer = new byte[1024];
             int len;
 
-            InputStream inStream = zipFile.getInputStream(entry);
             File temp = File.createTempFile("test_out", "kmz", tempDir);
             temp.deleteOnExit();
-            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(temp));
+            try (InputStream inStream = zipFile.getInputStream(entry);
+                    BufferedOutputStream outStream =
+                            new BufferedOutputStream(new FileOutputStream(temp))) {
 
-            while ((len = inStream.read(buffer)) >= 0) outStream.write(buffer, 0, len);
-            inStream.close();
-            outStream.close();
+                while ((len = inStream.read(buffer)) >= 0) outStream.write(buffer, 0, len);
+            }
 
             // read in the wms.kml and check its contents
             Document document = dom(new BufferedInputStream(new FileInputStream(temp)));
@@ -565,11 +557,6 @@ public class KMLReflectorTest extends WMSTestSupport {
                         "3", "count(//kml:Placemark//kml:Point)", document);
             } else {
                 assertEquals(0, document.getElementsByTagName("Placemark").getLength());
-            }
-
-        } finally {
-            if (zipFile != null) {
-                zipFile.close();
             }
         }
     }
@@ -843,8 +830,8 @@ public class KMLReflectorTest extends WMSTestSupport {
             return;
         }
         if (expectedText != null && text != null) {
-            String expectedCoordinates[] = expectedText.split("(\\s|,)");
-            String actualCoordiantes[] = text.split("(\\s|,)");
+            String[] expectedCoordinates = expectedText.split("(\\s|,)");
+            String[] actualCoordiantes = text.split("(\\s|,)");
             if (expectedCoordinates.length == actualCoordiantes.length) {
                 final int LENGTH = actualCoordiantes.length;
                 boolean checked = true;
@@ -1049,32 +1036,30 @@ public class KMLReflectorTest extends WMSTestSupport {
         KMZMapOutputFormat mapProducer = new KMZMapOutputFormat(getWMS());
         KMLMap map = mapProducer.produceMap(mapContent);
 
-        FileOutputStream output = new FileOutputStream(zip);
-        new KMLMapResponse(new KMLEncoder(), getWMS()).write(map, output, null);
-
-        output.flush();
-        output.close();
+        try (FileOutputStream output = new FileOutputStream(zip)) {
+            new KMLMapResponse(new KMLEncoder(), getWMS()).write(map, output, null);
+            output.flush();
+        }
 
         assertTrue(zip.exists());
 
         // unzip and test it
-        ZipFile zipFile = new ZipFile(zip);
+        try (ZipFile zipFile = new ZipFile(zip)) {
+            ZipEntry kmlEntry = zipFile.getEntry("wms.kml");
+            try (InputStream kmlStream = zipFile.getInputStream(kmlEntry)) {
+                Document kmlResult = XMLUnit.buildTestDocument(new InputSource(kmlStream));
 
-        ZipEntry kmlEntry = zipFile.getEntry("wms.kml");
-        InputStream kmlStream = zipFile.getInputStream(kmlEntry);
-
-        Document kmlResult = XMLUnit.buildTestDocument(new InputSource(kmlStream));
-
-        Double scale =
-                Double.parseDouble(
-                        XMLUnit.newXpathEngine()
-                                .getMatchingNodes(
-                                        "(//kml:Style)[1]/kml:IconStyle/kml:scale", kmlResult)
-                                .item(0)
-                                .getTextContent());
-        assertEquals(49d / 16d, scale, 0.01);
-
-        zipFile.close();
+                Double scale =
+                        Double.parseDouble(
+                                XMLUnit.newXpathEngine()
+                                        .getMatchingNodes(
+                                                "(//kml:Style)[1]/kml:IconStyle/kml:scale",
+                                                kmlResult)
+                                        .item(0)
+                                        .getTextContent());
+                assertEquals(49d / 16d, scale, 0.01);
+            }
+        }
     }
 
     WMSMapContent createMapContext(QName layer, String style) throws Exception {
@@ -1113,7 +1098,7 @@ public class KMLReflectorTest extends WMSTestSupport {
         if (url.indexOf('?') > 0) {
             url = url.substring(url.indexOf('?') + 1);
         }
-        Map<String, String> kvpMap = new HashMap<String, String>();
+        Map<String, String> kvpMap = new HashMap<>();
 
         String[] tuples = url.split("&");
         for (String tuple : tuples) {

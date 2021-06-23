@@ -36,6 +36,8 @@ import org.apache.wicket.request.component.IRequestablePage;
 import org.apache.wicket.request.cycle.AbstractRequestCycleListener;
 import org.apache.wicket.request.cycle.IRequestCycleListener;
 import org.apache.wicket.request.cycle.RequestCycle;
+import org.apache.wicket.request.resource.JavaScriptResourceReference;
+import org.apache.wicket.resource.JQueryResourceReference;
 import org.apache.wicket.resource.loader.IStringResourceLoader;
 import org.apache.wicket.settings.RequestCycleSettings.RenderStrategy;
 import org.apache.wicket.util.IProvider;
@@ -81,7 +83,7 @@ public class GeoServerApplication extends WebApplication
 
     public static final String GEOSERVER_CSRF_DISABLED = "GEOSERVER_CSRF_DISABLED";
     public static final String GEOSERVER_CSRF_WHITELIST = "GEOSERVER_CSRF_WHITELIST";
-
+    public static final String JQUERY_VERSION_3 = "jquery/jquery-3.5.1.js";
     ApplicationContext applicationContext;
 
     /**
@@ -108,6 +110,7 @@ public class GeoServerApplication extends WebApplication
     }
 
     /** The {@link GeoServerHomePage}. */
+    @Override
     public Class<GeoServerHomePage> getHomePage() {
         return GeoServerHomePage.class;
     }
@@ -179,6 +182,7 @@ public class GeoServerApplication extends WebApplication
     }
 
     /** Initialization override which sets up a locator for i18n resources. */
+    @Override
     protected void init() {
         // enable GeoServer custom resource locators
         getResourceSettings().setUseMinifiedResources(false);
@@ -200,7 +204,10 @@ public class GeoServerApplication extends WebApplication
                 .getStringResourceLoaders()
                 .add(0, new GeoServerStringResourceLoader());
         getDebugSettings().setAjaxDebugModeEnabled(false);
-
+        getJavaScriptLibrarySettings()
+                .setJQueryReference(
+                        new JavaScriptResourceReference(
+                                JQueryResourceReference.class, JQUERY_VERSION_3));
         getApplicationSettings().setPageExpiredErrorPage(GeoServerExpiredPage.class);
         // generates infinite redirections, commented out for the moment
         // getSecuritySettings().setCryptFactory(GeoserverWicketEncrypterFactory.get());
@@ -302,6 +309,7 @@ public class GeoServerApplication extends WebApplication
     /*
      * Overrides to return a custom converter locator which loads converters from the GeoToools converter subsystem.
      */
+    @Override
     protected IConverterLocator newConverterLocator() {
         // TODO: load converters from application context
         ConverterLocator locator = new ConverterLocator();
@@ -430,6 +438,7 @@ public class GeoServerApplication extends WebApplication
         return ((ServletWebRequest) req).getContainerRequest();
     }
 
+    @Override
     public void onApplicationEvent(ApplicationEvent event) {
         if (event instanceof AuthenticationSuccessEvent
                 || event instanceof InteractiveAuthenticationSuccessEvent) {

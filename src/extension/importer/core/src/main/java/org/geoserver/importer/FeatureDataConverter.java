@@ -10,12 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,25 +42,18 @@ public class FeatureDataConverter {
     private static final Set<String> ORACLE_RESERVED_WORDS;
 
     static {
-        final HashSet<String> words = new HashSet<String>();
-        final InputStream wordStream =
-                FeatureDataConverter.class.getResourceAsStream("oracle_reserved_words.txt");
-        final Reader wordReader = new InputStreamReader(wordStream, Charset.forName("UTF-8"));
-        final BufferedReader bufferedWordReader = new BufferedReader(wordReader);
-
-        String word;
-        try {
+        final HashSet<String> words = new HashSet<>();
+        try (InputStream wordStream =
+                        FeatureDataConverter.class.getResourceAsStream(
+                                "oracle_reserved_words.txt");
+                Reader wordReader = new InputStreamReader(wordStream, StandardCharsets.UTF_8);
+                BufferedReader bufferedWordReader = new BufferedReader(wordReader)) {
+            String word;
             while ((word = bufferedWordReader.readLine()) != null) {
                 words.add(word);
             }
         } catch (IOException e) {
             throw new RuntimeException("Unable to load Oracle reserved words", e);
-        } finally {
-            try {
-                bufferedWordReader.close();
-            } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Error while closing Oracle reserved words file", e);
-            }
         }
         ORACLE_RESERVED_WORDS = Collections.unmodifiableSet(words);
     }
@@ -123,7 +115,7 @@ public class FeatureDataConverter {
     protected Set<String> attributeNames(SimpleFeature feature) {
         List<AttributeDescriptor> attributeDescriptors =
                 feature.getType().getAttributeDescriptors();
-        Set<String> attrNames = new HashSet<String>(attributeDescriptors.size());
+        Set<String> attrNames = new HashSet<>(attributeDescriptors.size());
         for (AttributeDescriptor attr : attributeDescriptors) {
             attrNames.add(attr.getLocalName());
         }
@@ -149,19 +141,16 @@ public class FeatureDataConverter {
 
                     GeometryDescriptor gd = featureType.getGeometryDescriptor();
                     if (gd != null) {
-                        Class binding = gd.getType().getBinding();
+                        Class<?> binding = gd.getType().getBinding();
                         if (Geometry.class.equals(binding)) {
                             try {
-                                FeatureReader r = (FeatureReader) format.read(data, item);
-                                try {
+                                try (FeatureReader r = format.read(data, item)) {
                                     if (r.hasNext()) {
                                         SimpleFeature f = (SimpleFeature) r.next();
                                         if (f.getDefaultGeometry() != null) {
                                             binding = f.getDefaultGeometry().getClass();
                                         }
                                     }
-                                } finally {
-                                    r.close();
                                 }
                             } catch (IOException e) {
                                 LOGGER.warning("Unable to determine concrete geometry type");
@@ -234,6 +223,7 @@ public class FeatureDataConverter {
 
     public static final FeatureDataConverter TO_ORACLE =
             new FeatureDataConverter() {
+                @Override
                 public void convert(SimpleFeature from, SimpleFeature to) {
                     // for oracle the target names are always uppercase
                     Set<String> fromAttrNames = attributeNames(from);
@@ -246,6 +236,7 @@ public class FeatureDataConverter {
                     }
                 };
 
+                @Override
                 public SimpleFeatureType convertType(
                         SimpleFeatureType featureType,
                         VectorFormat format,

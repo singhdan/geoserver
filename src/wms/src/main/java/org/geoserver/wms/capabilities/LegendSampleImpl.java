@@ -36,7 +36,6 @@ import org.geoserver.wms.WMS;
 import org.geoserver.wms.legendgraphic.BufferedImageLegendGraphic;
 import org.geoserver.wms.legendgraphic.LegendGraphic;
 import org.geoserver.wms.legendgraphic.PNGLegendOutputFormat;
-import org.opengis.feature.type.FeatureType;
 
 /**
  * Default implementation of LegendSample. Implements samples caching to disk (png file on a
@@ -60,7 +59,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
 
     private GeoServerResourceLoader loader;
 
-    private Set<String> invalidated = new HashSet<String>();
+    private Set<String> invalidated = new HashSet<>();
 
     Resource baseDir;
 
@@ -93,7 +92,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
                 }
             }
         }
-        invalidated = new HashSet<String>();
+        invalidated = new HashSet<>();
     }
 
     /** Checks if the given SLD resource is newer than the given sample file. */
@@ -131,8 +130,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
             prefix = new String[] {"workspaces", style.getWorkspace().getName()};
         }
         String fileName = style.getFilename();
-        String[] pathParts =
-                (String[]) ArrayUtils.addAll(prefix, new String[] {"styles", fileName});
+        String[] pathParts = ArrayUtils.addAll(prefix, new String[] {"styles", fileName});
         String path = Paths.path(pathParts);
         return loader.get(path);
     }
@@ -142,6 +140,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
      *
      * @return legend dimensions
      */
+    @Override
     public Dimension getLegendURLSize(StyleInfo style) throws Exception {
         synchronized (style) {
             GetLegendGraphicOutputFormat pngOutputFormat = new PNGLegendOutputFormat();
@@ -173,7 +172,7 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
         Resource sampleLegendFolder = getSamplesFolder();
 
         legendGraphicRequest.setStrict(false);
-        legendGraphicRequest.setLayer((FeatureType) null);
+        legendGraphicRequest.setLayer(null);
         legendGraphicRequest.setStyle(style.getStyle());
         legendGraphicRequest.setFormat(pngOutputFormat.getContentType());
         Object legendGraphic = pngOutputFormat.produceLegendGraphic(legendGraphicRequest);
@@ -181,17 +180,11 @@ public class LegendSampleImpl implements CatalogListener, LegendSample, GeoServe
             BufferedImage image = (BufferedImage) ((LegendGraphic) legendGraphic).getLegend();
 
             PNGWriter writer = new PNGWriter();
-            OutputStream outStream = null;
-            try {
-                Resource sampleFile = sampleLegendFolder.get(getSampleFileName(style));
-                outStream = sampleFile.out();
+            Resource sampleFile = sampleLegendFolder.get(getSampleFileName(style));
+            try (OutputStream outStream = sampleFile.out()) {
                 writer.writePNG(image, outStream, 0.0f, FilterType.FILTER_NONE);
                 removeStyleSampleInvalidation(style);
                 return new Dimension(image.getWidth(), image.getHeight());
-            } finally {
-                if (outStream != null) {
-                    outStream.close();
-                }
             }
         }
 

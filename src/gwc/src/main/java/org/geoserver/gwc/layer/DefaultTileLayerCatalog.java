@@ -19,7 +19,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +47,7 @@ import org.geoserver.platform.resource.ResourceNotification.Event;
 import org.geoserver.platform.resource.ResourceNotification.Kind;
 import org.geoserver.platform.resource.Resources;
 import org.geoserver.platform.resource.Resources.ExtensionFilter;
+import org.geoserver.util.DimensionWarning;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.config.ContextualConfigurationProvider.Context;
 import org.geowebcache.config.XMLConfiguration;
@@ -138,8 +141,11 @@ public class DefaultTileLayerCatalog implements TileLayerCatalog {
     private XStream newXStream() {
         XStream serializer = this.xstreamProvider.get();
         serializer.allowTypeHierarchy(GeoServerTileLayerInfo.class);
+        serializer.allowTypes(new Class[] {DimensionWarning.WarningType.class});
         // have to use a string here because UnmodifiableSet is private
         serializer.allowTypes(new String[] {"java.util.Collections$UnmodifiableSet"});
+        serializer.addDefaultImplementation(LinkedHashSet.class, Set.class);
+        serializer.alias("warning", DimensionWarning.WarningType.class);
         return serializer;
     }
 
@@ -378,7 +384,7 @@ public class DefaultTileLayerCatalog implements TileLayerCatalog {
             layersById.put(newValue.getId(), newValue.clone());
         } catch (Exception e) {
             if (e instanceof ExecutionException) {
-                throwIfUnchecked(((ExecutionException) e).getCause());
+                throwIfUnchecked(e.getCause());
             }
             throwIfUnchecked(e);
         }
@@ -400,11 +406,8 @@ public class DefaultTileLayerCatalog implements TileLayerCatalog {
         }
         final Resource tmp = file.parent().get(file.name() + ".tmp");
         try {
-            final Writer writer = new OutputStreamWriter(tmp.out(), "UTF-8");
-            try {
+            try (Writer writer = new OutputStreamWriter(tmp.out(), StandardCharsets.UTF_8)) {
                 serializer.toXML(real, writer);
-            } finally {
-                writer.close();
             }
         } catch (Exception e) {
             tmp.delete();
@@ -461,7 +464,8 @@ public class DefaultTileLayerCatalog implements TileLayerCatalog {
         }
         GeoServerTileLayerInfoImpl info;
         try (Reader reader =
-                new InputStreamReader(new ByteArrayInputStream(res.getContents()), "UTF-8")) {
+                new InputStreamReader(
+                        new ByteArrayInputStream(res.getContents()), StandardCharsets.UTF_8)) {
             info = (GeoServerTileLayerInfoImpl) unmarshaller.fromXML(reader);
         }
 

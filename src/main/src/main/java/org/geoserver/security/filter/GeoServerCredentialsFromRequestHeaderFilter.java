@@ -6,6 +6,7 @@ package org.geoserver.security.filter;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -141,7 +142,7 @@ public class GeoServerCredentialsFromRequestHeaderFilter extends GeoServerSecuri
         }
 
         UsernamePasswordAuthenticationToken result =
-                new UsernamePasswordAuthenticationToken(us, pw, new ArrayList<GrantedAuthority>());
+                new UsernamePasswordAuthenticationToken(us, pw, new ArrayList<>());
         Authentication auth = null;
         try {
             auth = getSecurityManager().authenticationManager().authenticate(result);
@@ -150,7 +151,7 @@ public class GeoServerCredentialsFromRequestHeaderFilter extends GeoServerSecuri
             return;
         }
         LOGGER.log(Level.FINER, "logged in as {0}", us);
-        Collection<GeoServerRole> roles = new ArrayList<GeoServerRole>();
+        Collection<GeoServerRole> roles = new ArrayList<>();
         for (GrantedAuthority grauth : auth.getAuthorities()) {
             roles.add((GeoServerRole) grauth);
         }
@@ -208,9 +209,10 @@ public class GeoServerCredentialsFromRequestHeaderFilter extends GeoServerSecuri
         String digestString = null;
         try {
             MessageDigest md = (MessageDigest) digest.clone();
-            digestString = new String(Hex.encode(md.digest(buff.toString().getBytes("utf-8"))));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
+            digestString =
+                    new String(
+                            Hex.encode(
+                                    md.digest(buff.toString().getBytes(StandardCharsets.UTF_8))));
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }

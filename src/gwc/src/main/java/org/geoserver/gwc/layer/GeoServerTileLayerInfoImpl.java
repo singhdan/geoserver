@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableSet;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.geoserver.util.DimensionWarning;
 import org.geotools.util.SuppressFBWarnings;
 import org.geotools.util.logging.Logging;
 import org.geowebcache.config.XMLGridSubset;
@@ -117,6 +119,9 @@ public class GeoServerTileLayerInfoImpl implements Serializable, GeoServerTileLa
     // FIXME  need to hide this when serializing back out
     private Boolean autoCacheStyles;
 
+    // Set of cache warnings that would cause caching being skipped
+    Set<DimensionWarning.WarningType> cacheWarningSkips;
+
     public GeoServerTileLayerInfoImpl() {
         readResolve();
     }
@@ -132,6 +137,7 @@ public class GeoServerTileLayerInfoImpl implements Serializable, GeoServerTileLa
         }
         gridSubsets = nonNull(gridSubsets);
         mimeFormats = nonNull(mimeFormats);
+        cacheWarningSkips = nonNull(cacheWarningSkips);
 
         // Convert the deserialized set into a map.
         parameterFilters = nonNull(parameterFilters);
@@ -178,15 +184,17 @@ public class GeoServerTileLayerInfoImpl implements Serializable, GeoServerTileLa
         for (ParameterFilter pf : parameterFiltersMap.values()) {
             clone.addParameterFilter(pf.clone());
         }
+        clone.cacheWarningSkips = new LinkedHashSet<>();
+        clone.cacheWarningSkips.addAll(cacheWarningSkips);
         return clone;
     }
 
     private <T> Set<T> nonNull(Set<T> set) {
-        return set == null ? new HashSet<T>() : set;
+        return set == null ? new HashSet<>() : set;
     }
 
     private <K, T> Map<K, T> nonNull(Map<K, T> set) {
-        return set == null ? new HashMap<K, T>() : set;
+        return set == null ? new HashMap<>() : set;
     }
 
     /** @see org.geoserver.gwc.layer.GeoServerTileLayerInfo#getId() */
@@ -371,13 +379,13 @@ public class GeoServerTileLayerInfoImpl implements Serializable, GeoServerTileLa
     /** @see org.geoserver.gwc.layer.GeoServerTileLayerInfo#getParameterFilters() */
     @Override
     public Set<ParameterFilter> getParameterFilters() {
-        return new HashSet<ParameterFilter>(parameterFiltersMap.values());
+        return new HashSet<>(parameterFiltersMap.values());
     }
 
     /** @see org.geoserver.gwc.layer.GeoServerTileLayerInfo#setParameterFilters(Set) */
     @Override
     public void setParameterFilters(Set<ParameterFilter> parameterFilters) {
-        parameterFiltersMap = new HashMap<String, ParameterFilter>();
+        parameterFiltersMap = new HashMap<>();
         for (ParameterFilter pf : parameterFilters) {
             addParameterFilter(pf);
         }
@@ -423,5 +431,15 @@ public class GeoServerTileLayerInfoImpl implements Serializable, GeoServerTileLa
     @Override
     public void setInMemoryCached(boolean inMemoryCached) {
         this.inMemoryCached = inMemoryCached;
+    }
+
+    @Override
+    public Set<DimensionWarning.WarningType> getCacheWarningSkips() {
+        return cacheWarningSkips;
+    }
+
+    @Override
+    public void setCacheWarningSkips(Set<DimensionWarning.WarningType> cacheWarningSkips) {
+        this.cacheWarningSkips = nonNull(cacheWarningSkips);
     }
 }

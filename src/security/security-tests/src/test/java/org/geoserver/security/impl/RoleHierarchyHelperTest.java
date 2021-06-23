@@ -19,9 +19,9 @@ import org.junit.Test;
 public class RoleHierarchyHelperTest {
 
     protected Map<String, String> createFromArray(String[][] array) {
-        Map<String, String> mappings = new HashMap<String, String>();
-        for (int i = 0; i < array.length; i++) {
-            mappings.put(array[i][0], array[i][1]);
+        Map<String, String> mappings = new HashMap<>();
+        for (String[] strings : array) {
+            mappings.put(strings[0], strings[1]);
         }
         return mappings;
     }
@@ -100,9 +100,8 @@ public class RoleHierarchyHelperTest {
     public void testInValidTree1() throws Exception {
         Map<String, String> map = createFromArray(new String[][] {{"node1", "node1"}});
         RoleHierarchyHelper helper = new RoleHierarchyHelper(map);
-        boolean fail;
 
-        fail = true;
+        boolean fail = true;
         try {
             helper.getParent("node1");
         } catch (RuntimeException e) {
@@ -144,11 +143,10 @@ public class RoleHierarchyHelperTest {
                             {"node2", "node1"}
                         });
         RoleHierarchyHelper helper = new RoleHierarchyHelper(map);
-        boolean fail;
 
         helper.getParent("node1"); // ok
 
-        fail = true;
+        boolean fail = true;
         try {
             helper.getAncestors("node1");
         } catch (RuntimeException e) {

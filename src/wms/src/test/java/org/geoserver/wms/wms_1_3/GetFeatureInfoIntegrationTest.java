@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -92,7 +91,7 @@ public class GetFeatureInfoIntegrationTest extends WMSTestSupport {
     protected void onSetUp(SystemTestData testData) throws Exception {
         super.onSetUp(testData);
 
-        Map<String, String> namespaces = new HashMap<String, String>();
+        Map<String, String> namespaces = new HashMap<>();
         namespaces.put("xlink", "http://www.w3.org/1999/xlink");
         namespaces.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
         namespaces.put("wms", "http://www.opengis.net/wms");
@@ -120,11 +119,11 @@ public class GetFeatureInfoIntegrationTest extends WMSTestSupport {
                 "forestsManyRules", "ForestsManyRules.sld", CapabilitiesTest.class, catalog);
         testData.addVectorLayer(
                 SQUARES,
-                Collections.EMPTY_MAP,
+                Collections.emptyMap(),
                 "squares.properties",
                 CapabilitiesTest.class,
                 catalog);
-        Map propertyMap = new HashMap();
+        Map<LayerProperty, Object> propertyMap = new HashMap<>();
         propertyMap.put(LayerProperty.STYLE, "raster");
         testData.addRasterLayer(
                 TASMANIA_BM, "tazbm.tiff", "tiff", propertyMap, SystemTestData.class, catalog);
@@ -1307,13 +1306,9 @@ public class GetFeatureInfoIntegrationTest extends WMSTestSupport {
         Coordinate[] coordinates =
                 Arrays.stream(coordsArray.toArray())
                         .map(
-                                new Function<Object, Coordinate>() {
-                                    @Override
-                                    public Coordinate apply(Object t) {
-                                        JSONArray cArray = (JSONArray) t;
-                                        return new Coordinate(
-                                                cArray.getDouble(0), cArray.getDouble(1));
-                                    }
+                                t -> {
+                                    JSONArray cArray = (JSONArray) t;
+                                    return new Coordinate(cArray.getDouble(0), cArray.getDouble(1));
                                 })
                         .toArray(Coordinate[]::new);
 

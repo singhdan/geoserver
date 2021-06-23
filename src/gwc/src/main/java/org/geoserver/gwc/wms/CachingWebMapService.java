@@ -55,6 +55,7 @@ public class CachingWebMapService implements MethodInterceptor {
      * @see
      *     org.aopalliance.intercept.MethodInterceptor#invoke(org.aopalliance.intercept.MethodInvocation)
      */
+    @Override
     public WebMap invoke(MethodInvocation invocation) throws Throwable {
         GWCConfig config = gwc.getConfig();
         if (!config.isDirectWMSIntegrationEnabled()) {
@@ -114,7 +115,7 @@ public class CachingWebMapService implements MethodInterceptor {
                 null, "." + cachedTile.getMimeType().getFileExtension(), false);
 
         LinkedHashMap<String, String> headers = new LinkedHashMap<>();
-        GWC.setCacheControlHeaders(headers, layer);
+        GWC.setCacheControlHeaders(headers, layer, (int) cachedTile.getTileIndex()[2]);
         GWC.setConditionalGetHeaders(
                 headers, cachedTile, etag, request.getHttpRequestHeader("If-Modified-Since"));
         GWC.setCacheMetadataHeaders(headers, cachedTile, layer);

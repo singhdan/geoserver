@@ -35,6 +35,8 @@ import org.geotools.styling.Style;
 import org.geotools.styling.Symbolizer;
 import org.geotools.styling.TextSymbolizer;
 import org.geotools.styling.visitor.DpiRescaleStyleVisitor;
+import org.geotools.styling.visitor.LegendRenderingSelectorStyleVisitor;
+import org.geotools.styling.visitor.RenderingSelectorStyleVisitor;
 import org.geotools.styling.visitor.RescaleStyleVisitor;
 import org.geotools.styling.visitor.UomRescaleStyleVisitor;
 import org.locationtech.jts.geom.Coordinate;
@@ -78,6 +80,7 @@ public abstract class LegendGraphicBuilder {
      */
     protected final double MINIMUM_SYMBOL_SIZE = 3.0;
 
+    double dpiScaleFactor;
     protected int w;
     protected int h;
     boolean forceLabelsOn = false;
@@ -96,6 +99,13 @@ public abstract class LegendGraphicBuilder {
         // width and height, we might have to rescale those in case of DPI usage
         w = request.getWidth();
         h = request.getHeight();
+        double dpi = RendererUtilities.getDpi(request.getLegendOptions());
+        double standardDpi = RendererUtilities.getDpi(Collections.emptyMap());
+        dpiScaleFactor = dpi / standardDpi;
+        if (dpiScaleFactor != 1.0) {
+            w = ((int) Math.round(request.getWidth() * dpiScaleFactor));
+            h = ((int) Math.round(request.getHeight() * dpiScaleFactor));
+        }
 
         if (request.getLegendOptions().get("forceLabels") instanceof String) {
             String forceLabelsOpt = (String) request.getLegendOptions().get("forceLabels");
@@ -149,13 +159,8 @@ public abstract class LegendGraphicBuilder {
     protected Style resizeForDPI(GetLegendGraphicRequest request, Style gt2Style) {
 
         // apply dpi rescale
-        double dpi = RendererUtilities.getDpi(request.getLegendOptions());
-        double standardDpi = RendererUtilities.getDpi(Collections.emptyMap());
-        if (dpi != standardDpi) {
-            double scaleFactor = dpi / standardDpi;
-            w = ((int) Math.round(w * scaleFactor));
-            h = ((int) Math.round(h * scaleFactor));
-            DpiRescaleStyleVisitor dpiVisitor = new DpiRescaleStyleVisitor(scaleFactor);
+        if (dpiScaleFactor != 1.0) {
+            DpiRescaleStyleVisitor dpiVisitor = new DpiRescaleStyleVisitor(dpiScaleFactor);
             dpiVisitor.visit(gt2Style);
             gt2Style = (Style) dpiVisitor.getCopy();
         }
@@ -190,11 +195,10 @@ public abstract class LegendGraphicBuilder {
         double minSize = defaultMaxSize;
         double maxSize = defaultMinSize;
 
-        final int ruleCount = rules.length;
-        for (int i = 0; i < ruleCount; i++) {
-            Feature sample = getSampleFeatureForRule(featureType, feature, rules[i]);
+        for (Rule rule : rules) {
+            Feature sample = getSampleFeatureForRule(featureType, feature, rule);
             MetaBufferEstimator estimator = new MetaBufferEstimator(sample);
-            for (Symbolizer symbolizer : rules[i].symbolizers()) {
+            for (Symbolizer symbolizer : rule.symbolizers()) {
                 if (symbolizer instanceof PointSymbolizer || symbolizer instanceof LineSymbolizer) {
                     double size = getSymbolizerSize(estimator, symbolizer, defaultMaxSize);
                     // a line symbolizer is depicted as a line of the requested size, so don't go
@@ -486,8 +490,7 @@ public abstract class LegendGraphicBuilder {
         // Check for rendering transformation
 
         List<FeatureTypeStyle> ftsList = gt2Style.featureTypeStyles();
-        for (int i = 0; i < ftsList.size(); i++) {
-            FeatureTypeStyle fts = ftsList.get(i);
+        for (FeatureTypeStyle fts : ftsList) {
             Expression exp = fts.getTransformation();
             if (exp != null) {
                 ProcessFunction processFunction = (ProcessFunction) exp;
@@ -507,5 +510,19 @@ public abstract class LegendGraphicBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Checks if any <VendorOption name="renderingLegend">false</VendorOption> is present in the
+     * style removing style's elements not meant to be applied to the legend.
+     *
+     * @param style the style being used to build the legend
+     * @return the style without the element not meant to be applied to obtain the legend output
+     */
+    protected Style applyRenderingSelection(Style style) {
+        RenderingSelectorStyleVisitor renderingSelectorStyleVisitor =
+                new LegendRenderingSelectorStyleVisitor();
+        style.accept(renderingSelectorStyleVisitor);
+        return (Style) renderingSelectorStyleVisitor.getCopy();
     }
 }

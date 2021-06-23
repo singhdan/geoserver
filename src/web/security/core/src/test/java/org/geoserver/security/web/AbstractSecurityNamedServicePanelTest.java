@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.wicket.Component;
-import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.ajax.AjaxRequestHandler;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
@@ -98,6 +97,7 @@ public abstract class AbstractSecurityNamedServicePanelTest
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     protected DataView<SecurityNamedServiceConfig> getDataView() {
         return (DataView<SecurityNamedServiceConfig>)
                 basePage.get(basePanelId + ":table:listContainer:items");
@@ -151,9 +151,6 @@ public abstract class AbstractSecurityNamedServicePanelTest
             setFormComponentValue(selectAllPathComponent, "true");
             tester.executeAjaxEvent(selectAllPath, "click");
         } else {
-            DataView<SecurityNamedServiceConfig> dataview =
-                    (DataView<SecurityNamedServiceConfig>)
-                            testPage.get(basePanelId + ":table:listContainer:items");
             List<String> nameList = Arrays.asList(serviceNames);
 
             Iterator<Item<SecurityNamedServiceConfig>> it = getDataView().getItems();
@@ -219,7 +216,7 @@ public abstract class AbstractSecurityNamedServicePanelTest
                 break;
             }
         }
-        AjaxLink link = (AjaxLink) ((MarkupContainer) list.get(toClick)).get("link");
+        AjaxLink link = (AjaxLink) list.get(toClick).get("link");
         if (link.isEnabled()) {
             tester.executeAjaxEvent(link, "click");
         }

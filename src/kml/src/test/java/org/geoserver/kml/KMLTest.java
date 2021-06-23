@@ -93,10 +93,9 @@ public class KMLTest extends WMSTestSupport {
         testData.addStyle("scaleRange", "scaleRange.sld", getClass(), catalog);
         testData.addStyle("outputMode", "outputMode.sld", getClass(), catalog);
         testData.addVectorLayer(
-                STORM_OBS, Collections.EMPTY_MAP, "storm_obs.properties", getClass(), catalog);
+                STORM_OBS, Collections.emptyMap(), "storm_obs.properties", getClass(), catalog);
 
-        Map<SystemTestData.LayerProperty, Object> properties =
-                new HashMap<SystemTestData.LayerProperty, Object>();
+        Map<SystemTestData.LayerProperty, Object> properties = new HashMap<>();
         properties.put(
                 LayerProperty.LATLON_ENVELOPE,
                 new ReferencedEnvelope(-105.336, -105.112, 39.9, 40.116, CRS.decode("EPSG:4326")));
@@ -841,7 +840,7 @@ public class KMLTest extends WMSTestSupport {
                         .getFirstChild()
                         .getTextContent()
                         .split(",");
-        double[] p = new double[] {Double.parseDouble(coords[0]), Double.parseDouble(coords[1])};
+        double[] p = {Double.parseDouble(coords[0]), Double.parseDouble(coords[1])};
 
         assertEquals(-105.2, p[0], 0.1);
         assertEquals(40.0, p[1], 0.1);

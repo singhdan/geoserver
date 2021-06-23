@@ -221,6 +221,8 @@ Cache parameters that apply to the HTTP response from client requests.
 
 * **Response Cache Headers**— If selected, GeoServer will not request the same tile twice within the time specified in :guilabel:`Cache Time`. One hour measured in seconds (3600), is the default value for :guilabel:`Cache Time`.
 
+.. figure:: img/data_http_response_caching_settings.png
+
 Root Layer in Capabilities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Capabilities documents in GeoServer always have a top level (root) Layer element that works as a container of all the available layers and groups.
@@ -336,7 +338,7 @@ Limits features based on certain criteria, otherwise known as **regionation**.
 Edit Layer: Dimensions
 ----------------------
 
-GeoServer supports adding specific dimensions to WMS layers, as specified in WMS 1.1.1 and WMS 1.3.0 standards. There are two pre-defined dimensions in the WMS standards mentioned above, **TIME** and **ELEVATION**. Enabling dimensions for a layer allows users to specify those as extra parameters in GetMap requests, useful for creating maps or animations from underlying multi-dimensional data.
+GeoServer supports adding specific dimensions to WMS layers, as specified in WMS 1.1.1 and WMS 1.3.0 standards. There are two pre-defined dimensions in the WMS standards mentioned above, **TIME** and **ELEVATION**. Enabling dimensions for a layer allows users to specify those as extra parameters in GetMap requests, filtering the dataset to that particular set of times or elevations.
 
 These dimensions can be enabled and configured on the Dimensions tab.
 

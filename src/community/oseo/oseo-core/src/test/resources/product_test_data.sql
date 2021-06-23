@@ -1,6 +1,6 @@
 -- product data, without geometries
 INSERT INTO product
-("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution")
+("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution", "eoProductPlatform")
 VALUES(352, '<table xmlns="">
     <tr>
         <td valign="top" width="10%">
@@ -36,9 +36,9 @@ VALUES(352, '<table xmlns="">
             </table>
         </td>
     </tr>
-</table>', '2016-09-29 10:20:22.026', '2016-09-29 10:23:44.107', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20160929T154211_A006640_T32TPP_N02.04', 'SENTINEL2', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2016-09-29 18:59:02.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+</table>', '2016-09-29 10:20:22.026', '2016-09-29 10:23:44.107', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20160929T154211_A006640_T32TPP_N02.04', 'SENTINEL2', 'ARCHIVED', 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2016-09-29 18:59:02.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sentinel-2a');
 INSERT INTO product
-("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution")
+("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution", "assets")
 VALUES(353, '<table xmlns="">
     <tr>
         <td valign="top" width="10%">
@@ -74,7 +74,9 @@ VALUES(353, '<table xmlns="">
             </table>
         </td>
     </tr>
-</table>', '2016-01-17 10:10:30.743', '2016-01-17 10:10:30.743', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20160117T141030_A002979_T32TPL_N02.01', 'SENTINEL2', NULL, 'NOMINAL', 122, 'DESCENDING', NULL, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2016-01-18 21:05:18.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+</table>', '2016-01-17 10:10:30.743', '2016-01-17 10:10:30.743', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20160117T141030_A002979_T32TPL_N02.01', 'SENTINEL2', NULL, 'NOMINAL', 122, 'DESCENDING', NULL, NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2016-01-18 21:05:18.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+'{"thumbnail":{"title":"Thumbnail","href":"https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/9/V/XK/2017/10/13/0/preview.jpg"},"info":{"title":"Basic JSON metadata","href":"https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/9/V/XK/2017/10/13/0/tileInfo.json"},"metadata":{"title":"Complete XML metadata","href":"https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/9/V/XK/2017/10/13/0/metadata.xml"},"tki":{"title":"True color image","type":"image/jp2","eo:bands":[3,2,1],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/TKI.jp2"},"B01":{"title":"Band 1 (coastal)","type":"image/jp2","eo:bands":[0],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B01.jp2"},"B02":{"title":"Band 2 (blue)","type":"image/jp2","eo:bands":[2],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B02.jp2"},"B03":{"title":"Band 3 (green)","type":"image/jp2","eo:bands":[2],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B03.jp2"},"B04":{"title":"Band 4 (red)","type":"image/jp2","eo:bands":[3],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B04.jp2"},"B05":{"title":"Band 5","type":"image/jp2","eo:bands":[4],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B05.jp2"},"B06":{"title":"Band 6","type":"image/jp2","eo:bands":[5],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B06.jp2"},"B07":{"title":"Band 7","type":"image/jp2","eo:bands":[6],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B07.jp2"},"B08":{"title":"Band 8 (nir)","type":"image/jp2","eo:bands":[7],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B08.jp2"},"B8A":{"title":"Band 8A","type":"image/jp2","eo:bands":[8],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B08.jp2"},"B09":{"title":"Band 9","type":"image/jp2","eo:bands":[9],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B09.jp2"},"B10":{"title":"Band 10 (cirrus)","type":"image/jp2","eo:bands":[10],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B10.jp2"},"B11":{"title":"Band 11 (swir16)","type":"image/jp2","eo:bands":[11],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B11.jp2"},"B12":{"title":"Band 12 (swir22)","type":"image/jp2","eo:bands":[12],"href":"https://sentinel-s2-l1c.s3.amazonaws.com/tiles/9/V/XK/2017/10/13/0/B11.jp2"}}'
+);
 INSERT INTO product
 ("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution")
 VALUES(354, '<table xmlns="">
@@ -646,7 +648,7 @@ VALUES(368, '<table xmlns="">
     </tr>
 </table>', '2016-01-17 10:10:30.743', '2016-01-17 10:10:30.743', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20160117T141030_A002979_T33TWH_N02.01', 'SENTINEL2', NULL, 'NOMINAL', 122, 'DESCENDING', NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2016-01-18 21:05:18.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO product
-("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution")
+("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution", "eoProductPlatform")
 VALUES(369, '<table xmlns="">
     <tr>
         <td valign="top" width="10%">
@@ -682,7 +684,7 @@ VALUES(369, '<table xmlns="">
             </table>
         </td>
     </tr>
-</table>', '2017-03-08 18:54:21.026', '2017-03-08 18:54:21.026', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_MTI__20170308T220244_A008933_T11SLT_N02.04', 'SENTINEL2', NULL, 'NOMINAL', 70, 'DESCENDING', NULL, NULL, NULL, 7, NULL, NULL, NULL, NULL, NULL, '2017-03-08 18:54:20.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+</table>', '2017-03-08 18:54:21.026', '2017-03-08 18:54:21.026', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_MTI__20170308T220244_A008933_T11SLT_N02.04', 'SENTINEL2', NULL, 'NOMINAL', 70, 'DESCENDING', NULL, NULL, NULL, 7, NULL, NULL, NULL, NULL, NULL, '2017-03-08 18:54:20.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'sentinel-2a');
 INSERT INTO product
 ("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution")
 VALUES(370, '<table xmlns="">
@@ -720,7 +722,7 @@ VALUES(370, '<table xmlns="">
             </table>
         </td>
     </tr>
-</table>', '2017-02-26 10:20:21.026', '2017-02-26 10:20:21.026', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20170226T171842_A008785_T32TPN_N02.04', 'SENTINEL2', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2017-02-26 10:24:58.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+</table>', '2017-02-26 10:20:21.026', '2017-02-26 10:30:00.031', NULL, NULL, NULL, 'S2A_OPER_MSI_L1C_TL_SGS__20170226T171842_A008785_T32TPN_N02.04', 'SENTINEL2', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2017-02-26 10:24:58.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO product
 ("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoResolution", "atmSpecies", "atmVerticalRange")
 VALUES(1, '<table xmlns="">
@@ -797,6 +799,82 @@ VALUES(2, '<table xmlns="">
         </td>
     </tr>
 </table>', '2018-02-27 10:20:21.000', '2018-02-27 10:20:21.000', NULL, NULL, NULL, 'SAS1_20180227102021.02', 'SAS1', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2017-02-26 10:24:58.000', NULL, NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ARRAY['O3', 'NO2'], ARRAY[2000, 500]);
+INSERT INTO product
+("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoProductPlatform", "assets")
+VALUES(250, '<table xmlns="">
+    <tr>
+        <td valign="top" width="10%">
+            <a href="${QUICKLOOK_URL}" target="_blank" title="View browse image">
+                <img align="left" border="0" height="66" hspace="8" src="" width="66" />
+            </a>
+        </td>
+        <td valign="top" width="90%">
+            <table>
+                <tr valign="top">
+                    <td>
+                        <b>Date </b>
+                    </td>
+                    <td>2018-02-27 10:20:21.000/2018-02-27 10:20:21.000</td>
+                </tr>
+                <tr valign="top">
+                    <td>
+                        <b>Media Type</b>
+                    </td>
+                    <td>
+                        <a href="${ATOM_URL}" title="Atom format">ATOM(todo)</a>
+
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <td>
+                        <b>Metadata </b>
+                    </td>
+                    <td>
+                        <a href="${OM_METADATA_URL}" title="O&M format">O&amp;M</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>', '2018-02-27 10:20:21.000', '2018-02-27 10:20:21.000', NULL, NULL, NULL, 'LS8_TEST.02', 'LANDSAT8', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2017-02-26 10:24:58.000', '2017-02-28 10:24:58.000', NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LANDSAT_8', '{"thumbnail": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_thumb_large.jpg", "type": "image/jpeg", "title": "Thumbnail", "roles": [ "thumbnail" ] }, "index": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/index.html", "type": "application/html", "title": "HTML Page" }, "ANG": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_ANG.txt", "type": "text/plain", "title": "ANG Metadata", "roles": [ "metadata" ] }, "MTL": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_MTL.txt", "type": "text/plain", "title": "MTL Metadata", "roles": [ "metadata" ] }, "BQA": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_BQA.TIF", "type": "image/tiff; application=geotiff", "title": "Quality Band", "roles": [ "quality" ] }, "B1": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B1.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B1", "common_name": "coastal", "center_wavelength": 0.48, "full_width_half_max": 0.02 } ] }, "B2": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B2.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B2", "common_name": "blue", "center_wavelength": 0.44, "full_width_half_max": 0.06 } ] }, "B3": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B3.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B3", "common_name": "green", "center_wavelength": 0.56, "full_width_half_max": 0.06 } ] }, "B4": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B4.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B4", "common_name": "red", "center_wavelength": 0.65, "full_width_half_max": 0.04 } ] }, "B5": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B5.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B5", "common_name": "nir", "center_wavelength": 0.86, "full_width_half_max": 0.03 } ] }, "B6": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B6.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B6", "common_name": "swir16", "center_wavelength": 1.6, "full_width_half_max": 0.08 } ] }, "B7": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B7.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B7", "common_name": "swir22", "center_wavelength": 2.2, "full_width_half_max": 0.2 } ] }, "B8": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B8.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B8", "common_name": "pan", "center_wavelength": 0.59, "full_width_half_max": 0.18 } ], "gsd": 15 }, "B9": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B9.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B9", "common_name": "cirrus", "center_wavelength": 1.37, "full_width_half_max": 0.02 } ] }, "B10": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B10.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B10", "common_name": "lwir11", "center_wavelength": 10.9, "full_width_half_max": 0.8 } ], "gsd": 100 }, "B11": { "href": "https://landsat-pds.s3.us-west-2.amazonaws.com/c1/L8/218/077/LC08_L1TP_218077_20210511_20210511_01_T1/LC08_L1TP_218077_20210511_20210511_01_T1_B11.TIF", "type": "image/tiff; application=geotiff; profile=cloud-optimized", "eo:bands": [ { "name": "B11", "common_name": "lwir12", "center_wavelength": 12, "full_width_half_max": 1 } ], "gsd": 100 }}');
+INSERT INTO product
+("id", "htmlDescription", "timeStart", "timeEnd", "originalPackageLocation", "thumbnailURL", "quicklookURL", "eoIdentifier", "eoParentIdentifier", "eoProductionStatus", "eoAcquisitionType", "eoOrbitNumber", "eoOrbitDirection", "eoTrack", "eoFrame", "eoSwathIdentifier", "optCloudCover", "optSnowCover", "eoProductQualityStatus", "eoProductQualityDegradationStatus", "eoProcessorName", "eoProcessingCenter", "eoCreationDate", "eoModificationDate", "eoProcessingDate", "eoSensorMode", "eoArchivingCenter", "eoProcessingMode", "eoAvailabilityTime", "eoAcquisitionStation", "eoAcquisitionSubtype", "eoStartTimeFromAscendingNode", "eoCompletionTimeFromAscendingNode", "eoIlluminationAzimuthAngle", "eoIlluminationZenithAngle", "eoIlluminationElevationAngle", "sarPolarisationMode", "sarPolarisationChannels", "sarAntennaLookDirection", "sarMinimumIncidenceAngle", "sarMaximumIncidenceAngle", "sarDopplerFrequency", "sarIncidenceAngleVariation", "eoProductPlatform", "enabled")
+VALUES(251, '<table xmlns="">
+    <tr>
+        <td valign="top" width="10%">
+            <a href="${QUICKLOOK_URL}" target="_blank" title="View browse image">
+                <img align="left" border="0" height="66" hspace="8" src="" width="66" />
+            </a>
+        </td>
+        <td valign="top" width="90%">
+            <table>
+                <tr valign="top">
+                    <td>
+                        <b>Date </b>
+                    </td>
+                    <td>2018-02-27 10:20:21.000/2018-02-27 10:20:21.000</td>
+                </tr>
+                <tr valign="top">
+                    <td>
+                        <b>Media Type</b>
+                    </td>
+                    <td>
+                        <a href="${ATOM_URL}" title="Atom format">ATOM(todo)</a>
+
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <td>
+                        <b>Metadata </b>
+                    </td>
+                    <td>
+                        <a href="${OM_METADATA_URL}" title="O&M format">O&amp;M</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>', '2018-02-27 10:20:21.000', '2018-02-27 10:20:21.000', NULL, NULL, NULL, 'LS8_TEST.DISABLED', 'LANDSAT8', NULL, 'NOMINAL', 65, 'DESCENDING', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, '2017-02-26 10:24:58.000', '2017-02-28 10:24:58.000', NULL, NULL, 'DPA', 'DATA_DRIVEN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'LANDSAT_8', false);
 -- setup sequence to allow new inserts
 select setval('product_id_seq'::regclass, 400);
 -- geometries
@@ -821,6 +899,8 @@ update product set "footprint" = ST_GeomFromText('POLYGON((-117.969375418501 33.
 update product set "footprint" = ST_GeomFromText('POLYGON((11.54663057229 42.3357822388091,11.5875361840958 43.3235765959035,10.2338121377569 43.3462000093822,10.2142871341731 42.357641452722,11.54663057229 42.3357822388091))', 4326) where "id" = 370;
 update product set "footprint" = ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))', 4326) where "id" = 1;
 update product set "footprint" = ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))', 4326) where "id" = 2;
+update product set "footprint" = ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))', 4326) where "id" = 250;
+update product set "footprint" = ST_GeomFromText('POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))', 4326) where "id" = 251;
 
 -- metadata
 INSERT INTO product_metadata

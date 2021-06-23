@@ -51,6 +51,7 @@ public abstract class Query extends RequestObject {
 
     // public abstract boolean isTypeNamesUnset(List queries);
 
+    @Override
     public abstract List<QName> getTypeNames();
 
     public abstract List<String> getAliases();
@@ -59,6 +60,7 @@ public abstract class Query extends RequestObject {
 
     public abstract void setPropertyNames(List<String> names);
 
+    @Override
     public abstract Filter getFilter();
 
     public abstract List<SortBy> getSortBy();
@@ -72,16 +74,18 @@ public abstract class Query extends RequestObject {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<QName> getTypeNames() {
             return eGet(adaptee, "typeName", List.class);
         }
 
         @Override
         public List<String> getAliases() {
-            return new ArrayList();
+            return new ArrayList<>();
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<String> getPropertyNames() {
             return eGet(adaptee, "propertyName", List.class);
         }
@@ -97,11 +101,13 @@ public abstract class Query extends RequestObject {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<SortBy> getSortBy() {
             return eGet(adaptee, "sortBy", List.class);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<XlinkPropertyNameType> getXlinkPropertyNames() {
             return eGet(adaptee, "xlinkPropertyName", List.class);
         }
@@ -114,17 +120,21 @@ public abstract class Query extends RequestObject {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<QName> getTypeNames() {
             return eGet(adaptee, "typeNames", List.class);
         }
 
+        @Override
         public void setTypeNames(List<QName> typeNames) {
-            List l = eGet(adaptee, "typeNames", List.class);
+            @SuppressWarnings("unchecked")
+            List<QName> l = eGet(adaptee, "typeNames", List.class);
             l.clear();
             l.addAll(typeNames);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<String> getAliases() {
             return eGet(adaptee, "aliases", List.class);
         }
@@ -132,8 +142,9 @@ public abstract class Query extends RequestObject {
         @Override
         public List<String> getPropertyNames() {
             // WFS 2.0 has this as a list of QNAme, drop the qualified part
+            @SuppressWarnings("unchecked")
             List<QName> propertyNames = eGet(adaptee, "abstractProjectionClause", List.class);
-            List<String> l = new ArrayList();
+            List<String> l = new ArrayList<>();
             for (QName name : propertyNames) {
                 l.add(name.getLocalPart());
             }
@@ -152,6 +163,7 @@ public abstract class Query extends RequestObject {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public List<SortBy> getSortBy() {
             return eGet(adaptee, "abstractSortingClause", List.class);
         }
@@ -159,7 +171,7 @@ public abstract class Query extends RequestObject {
         @Override
         public List<XlinkPropertyNameType> getXlinkPropertyNames() {
             // no equivalent in wfs 2.0
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
     }
 }

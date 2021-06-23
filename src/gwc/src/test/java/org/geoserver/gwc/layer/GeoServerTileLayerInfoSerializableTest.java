@@ -128,9 +128,8 @@ public class GeoServerTileLayerInfoSerializableTest {
 
     @Test
     public void testMarshallingGridSubsets() throws Exception {
-        List<XMLGridSubset> subsets = new ArrayList<XMLGridSubset>();
-        XMLGridSubset subset;
-        subset = new XMLGridSubset();
+        List<XMLGridSubset> subsets = new ArrayList<>();
+        XMLGridSubset subset = new XMLGridSubset();
         subset.setGridSetName("EPSG:4326");
         subset.setZoomStart(1);
         subset.setZoomStop(10);

@@ -45,20 +45,23 @@ public class GML2OutputFormat2 extends WFSGetFeatureOutputFormat
     GeoServerResourceLoader resourceLoader;
 
     public GML2OutputFormat2(GeoServer gs) {
-        super(gs, new HashSet(Arrays.asList(new Object[] {"gml2", "text/xml; subtype=gml/2.1.2"})));
+        super(gs, new HashSet<>(Arrays.asList("gml2", "text/xml; subtype=gml/2.1.2")));
 
         this.catalog = gs.getCatalog();
         this.resourceLoader = catalog.getResourceLoader();
     }
 
+    @Override
     public String getMimeType(Object value, Operation operation) {
         return "text/xml; subtype=gml/2.1.2";
     }
 
+    @Override
     public String getCapabilitiesElementName() {
         return "GML2";
     }
 
+    @Override
     protected void write(
             FeatureCollectionResponse results, OutputStream output, Operation getFeature)
             throws ServiceException, IOException {
@@ -69,10 +72,10 @@ public class GML2OutputFormat2 extends WFSGetFeatureOutputFormat
         List featureCollections = results.getFeature();
 
         // round up the info objects for each feature collection
-        MultiValuedMap ns2metas = new HashSetValuedHashMap();
+        MultiValuedMap<NamespaceInfo, FeatureTypeInfo> ns2metas = new HashSetValuedHashMap<>();
 
-        for (Iterator fc = featureCollections.iterator(); fc.hasNext(); ) {
-            SimpleFeatureCollection features = (SimpleFeatureCollection) fc.next();
+        for (Object featureCollection : featureCollections) {
+            SimpleFeatureCollection features = (SimpleFeatureCollection) featureCollection;
             SimpleFeatureType featureType = features.getSchema();
 
             // load the metadata for the feature type

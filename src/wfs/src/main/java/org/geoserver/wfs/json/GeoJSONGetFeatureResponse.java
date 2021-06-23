@@ -66,6 +66,7 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
     }
 
     /** capabilities output format string. */
+    @Override
     public String getCapabilitiesElementName() {
         return JSONType.getJSONType(
                         getOutputFormats().isEmpty() ? null : getOutputFormats().iterator().next())
@@ -73,6 +74,7 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
     }
 
     /** Returns the mime type */
+    @Override
     public String getMimeType(Object value, Operation operation) throws ServiceException {
         if (jsonp) {
             return JSONType.JSONP.getMimeType();
@@ -190,9 +192,12 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
             featuresInfo =
                     encodeSimpleFeatures(jsonWriter, resultsList, isFeatureBounding(), operation);
         } else {
+
+            ComplexGeoJsonWriterOptions complexWriterOptions =
+                    getComplexGeoJsonWriterOptions(resultsList);
             // encode collection with complex features
             ComplexGeoJsonWriter complexWriter =
-                    new ComplexGeoJsonWriter(jsonWriter) {
+                    new ComplexGeoJsonWriter(jsonWriter, complexWriterOptions) {
 
                         @Override
                         protected void writeExtraFeatureProperties(
@@ -253,8 +258,7 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
         if (hasGeom && featureBounding) {
             CoordinateReferenceSystem crs = null;
             ReferencedEnvelope e = null;
-            for (int i = 0; i < resultsList.size(); i++) {
-                FeatureCollection collection = resultsList.get(i);
+            for (FeatureCollection collection : resultsList) {
                 FeatureType schema = collection.getSchema();
                 if (crs == null && schema.getGeometryDescriptor() != null)
                     crs = schema.getGeometryDescriptor().getCoordinateReferenceSystem();
@@ -541,7 +545,7 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
         if (crs != null) {
             Set<ReferenceIdentifier> ids = crs.getIdentifiers();
             // WKT defined crs might not have identifiers at all
-            if (ids != null && ids.size() > 0) {
+            if (ids != null && !ids.isEmpty()) {
                 NamedIdentifier namedIdent = (NamedIdentifier) ids.iterator().next();
                 String csStr = namedIdent.getCodeSpace().toUpperCase();
 
@@ -574,7 +578,21 @@ public class GeoJSONGetFeatureResponse extends WFSGetFeatureOutputFormat
     }
 
     @Override
-    public String getAttachmentFileName(Object value, Operation operation) {
-        return super.getAttachmentFileName(value, operation);
+    protected String getExtension(FeatureCollectionResponse response) {
+        return "json";
+    }
+
+    private ComplexGeoJsonWriterOptions getComplexGeoJsonWriterOptions(
+            List<FeatureCollection> resultsList) {
+        List<ComplexGeoJsonWriterOptions> settings =
+                GeoServerExtensions.extensions(ComplexGeoJsonWriterOptions.class);
+        ComplexGeoJsonWriterOptions chosen = null;
+        for (ComplexGeoJsonWriterOptions setting : settings) {
+            if (setting.canHandle(resultsList)) chosen = setting;
+        }
+        if (chosen == null) chosen = new DefaultComplexGeoJsonWriterOptions();
+        if (LOGGER.isLoggable(Level.FINE))
+            LOGGER.log(Level.FINE, "Chosen ComplexGeoJsonWriterOptions " + chosen.getClass());
+        return chosen;
     }
 }

@@ -5,6 +5,8 @@
  */
 package org.geoserver.wms.map;
 
+import static org.geoserver.template.TemplateUtils.FM_VERSION;
+
 import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -12,7 +14,7 @@ import freemarker.template.TemplateException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,8 +72,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
      *   <li>transparency = supported
      * </ol>
      */
-    static MapProducerCapabilities CAPABILITIES =
-            new MapProducerCapabilities(true, false, true, true, null);
+    static MapProducerCapabilities CAPABILITIES = new MapProducerCapabilities(true, true, true);
 
     /**
      * Set of parameters that we can ignore, since they are not part of the OpenLayers WMS request
@@ -79,7 +80,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
     private static final Set<String> ignoredParameters;
 
     static {
-        ignoredParameters = new HashSet<String>();
+        ignoredParameters = new HashSet<>();
         ignoredParameters.add("REQUEST");
         ignoredParameters.add("TILED");
         ignoredParameters.add("BBOX");
@@ -97,7 +98,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
     static {
         cfg = TemplateUtils.getSafeConfiguration();
         cfg.setClassForTemplateLoading(AbstractOpenLayersMapOutputFormat.class, "");
-        BeansWrapper bw = new BeansWrapper();
+        BeansWrapper bw = new BeansWrapper(FM_VERSION);
         bw.setExposureLevel(BeansWrapper.EXPOSE_PROPERTIES_ONLY);
         cfg.setObjectWrapper(bw);
     }
@@ -110,12 +111,13 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
     }
 
     /** @see GetMapOutputFormat#produceMap(WMSMapContent) */
+    @Override
     public RawMap produceMap(WMSMapContent mapContent) throws ServiceException, IOException {
         try {
             // create the template
             String templateName = getTemplateName(mapContent);
             Template template = cfg.getTemplate(templateName);
-            HashMap<String, Object> map = new HashMap<String, Object>();
+            HashMap<String, Object> map = new HashMap<>();
             map.put("context", mapContent);
             boolean hasOnlyCoverages = hasOnlyCoverages(mapContent);
             map.put("pureCoverage", hasOnlyCoverages);
@@ -134,9 +136,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
                                 new ReferencedEnvelope(request.getCrs()),
                                 request.getCrs(),
                                 wms.isContinuousMapWrappingEnabled());
-            } catch (MismatchedDimensionException e) {
-                LOGGER.log(Level.FINER, e.getMessage(), e);
-            } catch (FactoryException e) {
+            } catch (MismatchedDimensionException | FactoryException e) {
                 LOGGER.log(Level.FINER, e.getMessage(), e);
             }
             map.put(
@@ -184,7 +184,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
 
             template.setOutputEncoding("UTF-8");
             ByteArrayOutputStream buff = new ByteArrayOutputStream();
-            template.process(map, new OutputStreamWriter(buff, Charset.forName("UTF-8")));
+            template.process(map, new OutputStreamWriter(buff, StandardCharsets.UTF_8));
             RawMap result = new RawMap(mapContent, buff, getMimeType());
             return result;
         } catch (TemplateException e) {
@@ -340,6 +340,7 @@ public abstract class AbstractOpenLayersMapOutputFormat implements GetMapOutputF
         return ((w > h) ? w : h) / 256;
     }
 
+    @Override
     public MapProducerCapabilities getCapabilities(String format) {
         return CAPABILITIES;
     }

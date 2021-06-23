@@ -61,15 +61,15 @@ public class BlobStorePage extends GeoServerSecuredPage {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public BlobStorePage(final BlobStoreInfo originalStore) {
 
-        final List<String> assignedLayers = new ArrayList<String>();
+        final List<String> assignedLayers = new ArrayList<>();
 
         add(dialog = new GeoServerDialog("confirmDisableDialog"));
         dialog.setTitle(new ParamResourceModel("confirmDisableDialog.title", getPage()));
         dialog.setInitialHeight(200);
 
         typeOfBlobStore =
-                new DropDownChoice<BlobStoreType>(
-                        "typeOfBlobStore", new Model<BlobStoreType>(), BlobStoreTypes.getAll());
+                new DropDownChoice<>("typeOfBlobStore", new Model<>(), BlobStoreTypes.getAll());
+
         typeOfBlobStore.setOutputMarkupId(true);
         typeOfBlobStore.add(
                 new AjaxFormComponentUpdatingBehavior("change") {
@@ -77,8 +77,9 @@ public class BlobStorePage extends GeoServerSecuredPage {
 
                     @Override
                     protected void onUpdate(AjaxRequestTarget target) {
-                        blobStoreForm.setVisible(typeOfBlobStore.getModelObject() != null);
-                        if (typeOfBlobStore.getModelObject() != null) {
+                        boolean visible = typeOfBlobStore.getModelObject() != null;
+                        blobStoreForm.setVisible(visible);
+                        if (visible) {
                             blobStoreForm
                                     .getModel()
                                     .setObject(typeOfBlobStore.getModelObject().newConfigObject());
@@ -95,7 +96,7 @@ public class BlobStorePage extends GeoServerSecuredPage {
         typeOfBlobStore.add(
                 new AttributeModifier("title", new ResourceModel("typeOfBlobStore.title")));
 
-        Form<BlobStoreType<?>> selector = new Form<BlobStoreType<?>>("selector");
+        Form<BlobStoreType<?>> selector = new Form<>("selector");
         selector.add(typeOfBlobStore);
         add(selector);
 
@@ -104,16 +105,16 @@ public class BlobStorePage extends GeoServerSecuredPage {
         add(blobConfigContainer);
 
         blobStoreForm =
-                new Form<BlobStoreInfo>(
+                new Form<>(
                         "blobStoreForm",
-                        new CompoundPropertyModel<BlobStoreInfo>(
+                        new CompoundPropertyModel<>(
                                 originalStore == null
                                         ? null
                                         : (BlobStoreInfo) originalStore.clone()));
         blobConfigContainer.add(blobStoreForm);
         blobStoreForm.setVisible(originalStore != null);
 
-        blobStoreForm.add((tfId = new TextField<String>("name")).setRequired(true));
+        blobStoreForm.add((tfId = new TextField<>("name")).setRequired(true));
         tfId.add(new AttributeModifier("title", new ResourceModel("name.title")));
         blobStoreForm.add(cbEnabled = new CheckBox("enabled"));
         cbEnabled.add(new AttributeModifier("title", new ResourceModel("enabled.title")));
@@ -195,7 +196,7 @@ public class BlobStorePage extends GeoServerSecuredPage {
                         if (originalStore != null
                                 && originalStore.isEnabled()
                                 && !blobStore.isEnabled()
-                                && assignedLayers.size() > 0) {
+                                && !assignedLayers.isEmpty()) {
                             dialog.showOkCancel(
                                     target,
                                     new GeoServerDialog.DialogDelegate() {
@@ -255,6 +256,7 @@ public class BlobStorePage extends GeoServerSecuredPage {
                         }
                     }
 
+                    @Override
                     protected void onError(AjaxRequestTarget target, Form<?> form) {
                         addFeedbackPanels(target);
                     }

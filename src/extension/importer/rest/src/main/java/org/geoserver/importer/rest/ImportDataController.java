@@ -4,11 +4,9 @@
  */
 package org.geoserver.importer.rest;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import java.util.NoSuchElementException;
 import org.geoserver.importer.Directory;
-import org.geoserver.importer.FileData;
 import org.geoserver.importer.ImportContext;
 import org.geoserver.importer.ImportData;
 import org.geoserver.importer.ImportTask;
@@ -98,7 +96,7 @@ public class ImportDataController extends ImportBaseController {
         ImportData file = lookupFile(fileName, dir);
 
         if (dir.getFiles().remove(file)) {
-            return new ResponseEntity("", new HttpHeaders(), HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>("", new HttpHeaders(), HttpStatus.NO_CONTENT);
         } else {
             throw new RestException(
                     "Unable to remove file: " + file.getName(), HttpStatus.BAD_REQUEST);
@@ -113,7 +111,7 @@ public class ImportDataController extends ImportBaseController {
             response = lookupFile(fileName, dir);
             response.setParent((ImportContext) dir.getParent());
         }
-        return (ImportData) response;
+        return response;
     }
 
     Directory lookupDirectory(Long importId) {
@@ -131,13 +129,7 @@ public class ImportDataController extends ImportBaseController {
         try {
             if (file != null) {
                 return Iterators.find(
-                        dir.getFiles().iterator(),
-                        new Predicate<FileData>() {
-                            @Override
-                            public boolean apply(FileData input) {
-                                return input.getFile().getName().equals(file);
-                            }
-                        });
+                        dir.getFiles().iterator(), input -> input.getFile().getName().equals(file));
             }
         } catch (NoSuchElementException e) {
 

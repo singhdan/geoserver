@@ -6,6 +6,8 @@
  */
 package org.geoserver.security.oauth2;
 
+import org.geoserver.security.config.RoleSource;
+
 /**
  * Filter configuration for OpenId Connect. This is completely freeform, so adding only the basic
  * bits in here.
@@ -13,7 +15,19 @@ package org.geoserver.security.oauth2;
 public class OpenIdConnectFilterConfig extends GeoServerOAuth2FilterConfig {
 
     String principalKey = "email";
-    String jwkUri;
+    String jwkURI;
+    String tokenRolesClaim;
+
+    /** Supports extraction of roles among the token claims */
+    public static enum OpenIdRoleSource implements RoleSource {
+        IdToken,
+        AccessToken;
+
+        @Override
+        public boolean equals(RoleSource other) {
+            return other != null && other.toString().equals(toString());
+        }
+    };
 
     public OpenIdConnectFilterConfig() {
         this.redirectUri = "http://localhost:8080/geoserver";
@@ -33,11 +47,19 @@ public class OpenIdConnectFilterConfig extends GeoServerOAuth2FilterConfig {
         this.principalKey = principalKey;
     }
 
-    public String getJwkUri() {
-        return jwkUri;
+    public String getJwkURI() {
+        return jwkURI;
     }
 
-    public void setJwkUri(String jwkUri) {
-        this.jwkUri = jwkUri;
+    public void setJwkURI(String jwkURI) {
+        this.jwkURI = jwkURI;
+    }
+
+    public String getTokenRolesClaim() {
+        return tokenRolesClaim;
+    }
+
+    public void setTokenRolesClaim(String tokenRolesClaim) {
+        this.tokenRolesClaim = tokenRolesClaim;
     }
 }

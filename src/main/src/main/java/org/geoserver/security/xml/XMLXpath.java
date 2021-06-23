@@ -33,18 +33,22 @@ public abstract class XMLXpath {
      *
      * @author christian
      */
+    @SuppressWarnings("unchecked") // Java 8 and Java 11 interfaces differ
     public class NamespaceContextImpl implements NamespaceContext {
-        private Map<String, String> prefix_ns_Map = new HashMap<String, String>();
-        private Map<String, String> ns_prefix_Map = new HashMap<String, String>();
+        private Map<String, String> prefix_ns_Map = new HashMap<>();
+        private Map<String, String> ns_prefix_Map = new HashMap<>();
 
+        @Override
         public String getNamespaceURI(String prefix) {
             return prefix_ns_Map.get(prefix);
         }
 
+        @Override
         public String getPrefix(String namespaceURI) {
             return ns_prefix_Map.get(namespaceURI);
         }
 
+        @Override
         public Iterator getPrefixes(String namespaceURI) {
             return prefix_ns_Map.keySet().iterator();
         }

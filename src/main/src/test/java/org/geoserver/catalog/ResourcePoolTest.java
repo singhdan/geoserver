@@ -33,18 +33,21 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import javax.media.jai.PlanarImage;
 import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.easymock.Capture;
 import org.easymock.CaptureType;
@@ -94,6 +97,7 @@ import org.geotools.util.URLs;
 import org.geotools.util.Version;
 import org.geotools.util.factory.GeoTools;
 import org.geotools.util.factory.Hints;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.locationtech.jts.geom.Point;
@@ -399,31 +403,29 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         FeatureTypeInfo lakes =
                 cat.getFeatureTypeByName(
                         MockData.LAKES.getNamespaceURI(), MockData.LAKES.getLocalPart());
-        assertFalse("foo".equals(lakes.getTitle()));
+        assertNotEquals("foo", lakes.getTitle());
 
         GeoServerDataDirectory dd = new GeoServerDataDirectory(getResourceLoader());
         File info = dd.config(lakes).file();
         // File info = getResourceLoader().find("featureTypes", "cite_Lakes", "info.xml");
 
-        FileReader in = new FileReader(info);
-        Element dom = ReaderUtils.parse(in);
-        Element title = ReaderUtils.getChildElement(dom, "title");
-        title.getFirstChild().setNodeValue("foo");
+        try (FileReader in = new FileReader(info)) {
+            Element dom = ReaderUtils.parse(in);
+            Element title = ReaderUtils.getChildElement(dom, "title");
+            title.getFirstChild().setNodeValue("foo");
 
-        OutputStream output = new FileOutputStream(info);
-        try {
-            TransformerFactory.newInstance()
-                    .newTransformer()
-                    .transform(new DOMSource(dom), new StreamResult(output));
-        } finally {
-            output.close();
+            try (OutputStream output = new FileOutputStream(info)) {
+                TransformerFactory.newInstance()
+                        .newTransformer()
+                        .transform(new DOMSource(dom), new StreamResult(output));
+            }
+
+            getGeoServer().reload();
+            lakes =
+                    cat.getFeatureTypeByName(
+                            MockData.LAKES.getNamespaceURI(), MockData.LAKES.getLocalPart());
+            assertEquals("foo", lakes.getTitle());
         }
-
-        getGeoServer().reload();
-        lakes =
-                cat.getFeatureTypeByName(
-                        MockData.LAKES.getNamespaceURI(), MockData.LAKES.getLocalPart());
-        assertEquals("foo", lakes.getTitle());
     }
 
     @Test
@@ -523,23 +525,19 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
 
             DataStoreInfo expandedDs = getCatalog().getResourcePool().clone(ds, true);
 
-            assertTrue(ds.getConnectionParameters().get("host").equals("${jdbc.host}"));
-            assertTrue(ds.getConnectionParameters().get("port").equals("${jdbc.port}"));
+            assertEquals("${jdbc.host}", ds.getConnectionParameters().get("host"));
+            assertEquals("${jdbc.port}", ds.getConnectionParameters().get("port"));
 
-            if (GeoServerEnvironment.ALLOW_ENV_PARAMETRIZATION) {
-                assertTrue(
-                        expandedDs
-                                .getConnectionParameters()
-                                .get("host")
-                                .equals(gsEnvironment.resolveValue("${jdbc.host}")));
-                assertTrue(
-                        expandedDs
-                                .getConnectionParameters()
-                                .get("port")
-                                .equals(gsEnvironment.resolveValue("${jdbc.port}")));
+            if (GeoServerEnvironment.allowEnvParametrization()) {
+                assertEquals(
+                        expandedDs.getConnectionParameters().get("host"),
+                        gsEnvironment.resolveValue("${jdbc.host}"));
+                assertEquals(
+                        expandedDs.getConnectionParameters().get("port"),
+                        gsEnvironment.resolveValue("${jdbc.port}"));
             } else {
-                assertTrue(expandedDs.getConnectionParameters().get("host").equals("${jdbc.host}"));
-                assertTrue(expandedDs.getConnectionParameters().get("port").equals("${jdbc.port}"));
+                assertEquals("${jdbc.host}", expandedDs.getConnectionParameters().get("host"));
+                assertEquals("${jdbc.port}", expandedDs.getConnectionParameters().get("port"));
             }
         } finally {
             getCatalog().remove(ds);
@@ -583,7 +581,7 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         try {
             rp.getGridCoverageReader(info, null);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "", e);
             fail("Unable to add an imagepyramid with a space in it's name");
         }
         rp.dispose();
@@ -701,7 +699,7 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         ds.setWorkspace(ws);
         ds.setEnabled(true);
 
-        Map params = ds.getConnectionParameters();
+        Map<String, Serializable> params = ds.getConnectionParameters();
         params.put("dbtype", "h2");
         File dbFile =
                 new File(getTestData().getDataDirectoryRoot().getAbsolutePath(), "data/h2test");
@@ -779,6 +777,7 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         ResourcePool pool =
                 new ResourcePool(catalog) {
                     // cannot clone the mock objects
+                    @Override
                     public CoverageStoreInfo clone(
                             CoverageStoreInfo source, boolean allowEnvParametrization) {
                         return source;
@@ -859,14 +858,16 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
         GeometryDescriptor schemaDefaultGeometry =
                 featureType.getFeatureType().getGeometryDescriptor();
 
-        FeatureIterator i = featureType.getFeatureSource(null, null).getFeatures().features();
-        GeometryDescriptor featureDefaultGeometry =
-                i.next().getDefaultGeometryProperty().getDescriptor();
+        try (FeatureIterator i =
+                featureType.getFeatureSource(null, null).getFeatures().features()) {
+            GeometryDescriptor featureDefaultGeometry =
+                    i.next().getDefaultGeometryProperty().getDescriptor();
 
-        assertNotNull(schemaDefaultGeometry);
-        assertNotNull(featureDefaultGeometry);
-        assertEquals("pointProperty", schemaDefaultGeometry.getLocalName());
-        assertEquals(schemaDefaultGeometry, featureDefaultGeometry);
+            assertNotNull(schemaDefaultGeometry);
+            assertNotNull(featureDefaultGeometry);
+            assertEquals("pointProperty", schemaDefaultGeometry.getLocalName());
+            assertEquals(schemaDefaultGeometry, featureDefaultGeometry);
+        }
     }
 
     /**
@@ -887,6 +888,54 @@ public class ResourcePoolTest extends GeoServerSystemTestSupport {
 
         GridCoverageReader reader = pool.getGridCoverageReader(info, null);
 
+        // the CoverageReaderFileConverter should have successfully converted the URL string to a
+        // File object
+        assertTrue(reader.getSource() instanceof File);
+    }
+
+    /**
+     * Tests that even if the input string cannot be parsed as a valid URI reference, but the it is
+     * nontheless a valid file URL, the CoverageReaderFileConverter is able to do the conversion.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testCoverageReaderInputConverterInvalidURI() throws IOException {
+        Assume.assumeTrue(SystemUtils.IS_OS_WINDOWS);
+        String fileURL = MockData.class.getResource("tazdem.tiff").getFile().replace("/", "\\");
+        fileURL = "file://" + fileURL;
+        // the file URL is not now a valid URI but the converter should be able to convert it
+        Catalog catalog = getCatalog();
+        ResourcePool pool = new ResourcePool(catalog);
+
+        CoverageStoreInfo info = catalog.getFactory().createCoverageStore();
+        info.setType("GeoTIFF");
+        info.setURL(fileURL);
+
+        GridCoverageReader reader = pool.getGridCoverageReader(info, null);
+        // the CoverageReaderFileConverter should have successfully converted the URL string to a
+        // File object
+        assertTrue(reader.getSource() instanceof File);
+    }
+
+    /**
+     * Tests that even if the input string is a valid file path, the CoverageReaderFileConverter is
+     * able to do the conversion.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testCoverageReaderInputConverterFilePath() throws IOException {
+        String fileURL = MockData.class.getResource("tazdem.tiff").getFile();
+        // the file URL is not now a valid URI but the converter should be able to convert it
+        Catalog catalog = getCatalog();
+        ResourcePool pool = new ResourcePool(catalog);
+
+        CoverageStoreInfo info = catalog.getFactory().createCoverageStore();
+        info.setType("GeoTIFF");
+        info.setURL(fileURL);
+
+        GridCoverageReader reader = pool.getGridCoverageReader(info, null);
         // the CoverageReaderFileConverter should have successfully converted the URL string to a
         // File object
         assertTrue(reader.getSource() instanceof File);

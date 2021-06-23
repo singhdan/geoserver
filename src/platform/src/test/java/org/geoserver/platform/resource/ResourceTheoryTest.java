@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
@@ -35,7 +36,6 @@ import org.apache.commons.io.IOUtils;
 import org.geoserver.platform.resource.Resource.Type;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
-import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 
 /**
@@ -176,15 +176,7 @@ public abstract class ResourceTheoryTest {
         Resource res = getResource(path);
         assumeThat(res, is(directory()));
 
-        assertThrows(
-                IllegalStateException.class,
-                new ThrowingRunnable() {
-
-                    @Override
-                    public void run() throws Throwable {
-                        res.in().close();
-                    }
-                });
+        assertThrows(IllegalStateException.class, () -> res.in().close());
     }
 
     @Theory
@@ -192,14 +184,7 @@ public abstract class ResourceTheoryTest {
         Resource res = getResource(path);
         assumeThat(res, is(directory()));
 
-        assertThrows(
-                IllegalStateException.class,
-                new ThrowingRunnable() {
-                    @Override
-                    public void run() throws Throwable {
-                        res.out().close();
-                    }
-                });
+        assertThrows(IllegalStateException.class, () -> res.out().close());
     }
 
     @Theory
@@ -478,6 +463,7 @@ public abstract class ResourceTheoryTest {
     }
 
     @Theory
+    @SuppressWarnings("PMD.CloseResource")
     public void theoryDoubleClose(String path) throws Exception {
         final Resource res = getResource(path);
         assumeThat(res, is(resource()));
@@ -503,7 +489,7 @@ public abstract class ResourceTheoryTest {
     public void theoryRootSlashIsIgnored(String path) throws Exception {
         final Resource res = getResource(path);
         final Resource res2 = getResource("/" + path);
-        assertTrue(res.equals(res2));
-        assertTrue(res.path().equals(res2.path()));
+        assertEquals(res, res2);
+        assertEquals(res.path(), res2.path());
     }
 }
