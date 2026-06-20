@@ -28,7 +28,7 @@ The `truncateAll` operation is appropriate for the following scenarios:
 
 The easiest way to execute `truncateAll` is through the GeoServer web administration interface:
 
-1. Navigate to **Tile Layers** under **Caching Defaults** in the **GeoWebCache** section
+1. Navigate to **Tile Layers** under **GeoWebCache** in the web administration interface
 2. Click the **"Empty all"** link at the top of the Tile Layers list
 
 ![](img/gwc_confirm.png)
